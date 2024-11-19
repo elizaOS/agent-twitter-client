@@ -1,24 +1,32 @@
 name: Publish
 
 on:
-  release:
-    types:
-      - created
+  push:
+    branches:
+      - main
 
 jobs:
   publish:
+    name: Publish
     runs-on: ubuntu-latest
+    environment: NPM
+
     steps:
-      - uses: actions/checkout@v3
-      - name: Install Node.js
-        uses: actions/setup-node@v3
+      - name: Checkout
+        uses: actions/checkout@v2
         with:
-          node-version: 20.x
-      - name: Install
+          ref: ${{ github.head_ref }}
+
+      - name: Set NPM registry
+        run: npm config set //registry.npmjs.org/:_authToken=\${NPM_TOKEN}
+
+      - name: Install modules
         run: npm install
+
       - name: Build
         run: npm run build
+
       - name: Publish
+        run: npm publish
         env:
-          NPM_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish --access public
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
