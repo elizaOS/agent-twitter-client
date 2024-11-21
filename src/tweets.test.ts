@@ -459,3 +459,56 @@ test('sendTweetWithMedia successfully sends a tweet with media', async () => {
   console.log('Send tweet with media result:', result);
   expect(result.ok).toBeTruthy();
 }, 30000);
+
+test('scraper can like a tweet', async () => {
+  const scraper = await getScraper();
+  const tweetId = '1776276954435481937'; // Use a real tweet ID for testing
+
+  // Test should not throw an error
+  await expect(scraper.likeTweet(tweetId)).resolves.not.toThrow();
+});
+
+test('scraper can quote tweet', async () => {
+  const scraper = await getScraper();
+  const quotedTweetId = '1776276954435481937';
+  const quoteText = `Testing quote tweet functionality ${Date.now()}`;
+
+  const response = await scraper.sendQuoteTweet(quoteText, quotedTweetId);
+  
+  expect(response).toBeDefined();
+  expect(response.ok).toBeTruthy();
+});
+
+test('scraper can quote tweet with media', async () => {
+  const scraper = await getScraper();
+  const quotedTweetId = '1776276954435481937';
+  const quoteText = `Testing quote tweet with media functionality ${Date.now()}`;
+
+  // Read test image
+  const imageBuffer = fs.readFileSync(
+    path.join(__dirname, '../test-assets/test-image.jpeg')
+  );
+
+  const response = await scraper.sendQuoteTweet(quoteText, quotedTweetId, {
+    mediaData: [imageBuffer]
+  });
+  
+  expect(response).toBeDefined();
+  expect(response.ok).toBeTruthy();
+}, 30000);
+
+test('scraper can retweet', async () => {
+  const scraper = await getScraper();
+  const tweetId = '1776276954435481937';
+
+  // Test should not throw an error
+  await expect(scraper.retweet(tweetId)).resolves.not.toThrow();
+});
+
+test('scraper can follow user', async () => {
+  const scraper = await getScraper();
+  const username = 'elonmusk'; // Use a real username for testing
+
+  // Test should not throw an error
+  await expect(scraper.followUser(username)).resolves.not.toThrow();
+}, 30000);

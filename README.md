@@ -169,6 +169,9 @@ const followerResults = await scraper.fetchProfileFollowers('12345', 100);
 
 // Fetch a page of who a user is following
 const followingResults = await scraper.fetchProfileFollowing('12345', 100);
+
+// Follow a user
+const followUserResults = await scraper.followUser('elonmusk');
 ```
 
 ### Trends
@@ -205,4 +208,16 @@ const latestTweet = await scraper.getLatestTweet('TwitterDev');
 
 // Get a specific tweet by ID
 const tweet = await scraper.getTweet('1234567890123456789');
+
+// Send a tweet
+const sendTweetResults = await scraper.sendTweet('Hello world!');
+
+// Send a quote tweet - Media files are optional
+const sendQuoteTweetResults = await scraper.sendQuoteTweet('Hello world!', '1234567890123456789', ['mediaFile1', 'mediaFile2']);
+
+// Retweet a tweet
+const retweetResults = await scraper.retweet('1234567890123456789');
+
+// Like a tweet
+const likeTweetResults = await scraper.likeTweet('1234567890123456789');
 ```
