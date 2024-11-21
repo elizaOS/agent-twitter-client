@@ -1,4 +1,4 @@
-# goat-x
+# agent-twitter-client
 
 This is a modified version of [@ai16z/agent-twitter-client](https://github.com/ai16z/agent-twitter-client) with added functionality for sending quote tweets, retweets, likes, and follows. This package does not require the Twitter API to use and will run in both the browser and server.
 
