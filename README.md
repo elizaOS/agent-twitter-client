@@ -1,11 +1,11 @@
-# agent-twitter-client
+# goat-x
 
-This is a modified version of [@the-convocation/twitter-scraper](https://github.com/the-convocation/twitter-scraper) with added functionality for sending tweets and retweets. This package does not require the Twitter API to use and will run in both the browser and server.
+This is a modified version of [@ai16z/agent-twitter-client](https://github.com/ai16z/agent-twitter-client) with added functionality for sending quote tweets, retweets, likes, and follows. This package does not require the Twitter API to use and will run in both the browser and server.
 
 ## Installation
 
 ```sh
-npm install agent-twitter-client
+npm install goat-x
 ```
 
 ## Setup
