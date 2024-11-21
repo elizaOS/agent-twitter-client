@@ -5,7 +5,7 @@ This is a modified version of [@ai16z/agent-twitter-client](https://github.com/a
 ## Installation
 
 ```sh
-npm install goat-x
+npm install agent-twitter-client
 ```
 
 ## Setup
