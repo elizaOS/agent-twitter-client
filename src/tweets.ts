@@ -444,6 +444,7 @@ export async function createCreateTweetRequest(
   auth: TwitterAuth,
   tweetId?: string,
   mediaData?: { data: Buffer; mediaType: string }[],
+  hideLinkPreview: boolean = false,
 ) {
   const onboardingTaskUrl = 'https://api.twitter.com/1.1/onboarding/task.json';
 
@@ -473,6 +474,10 @@ export async function createCreateTweetRequest(
     },
     semantic_annotation_ids: [],
   };
+
+  if (hideLinkPreview) {
+    variables["card_uri"] = "tombstone://card"
+  }
 
   if (mediaData && mediaData.length > 0) {
     const mediaIds = await Promise.all(
