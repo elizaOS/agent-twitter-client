@@ -461,12 +461,14 @@ export class Scraper {
     text: string,
     replyToTweetId?: string,
     mediaData?: { data: Buffer; mediaType: string }[],
+    hideLinkPreview?: boolean,
   ) {
     return await createCreateTweetRequest(
       text,
       this.auth,
       replyToTweetId,
       mediaData,
+      hideLinkPreview,
     );
   }
 
