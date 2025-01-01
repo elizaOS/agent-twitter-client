@@ -1,6 +1,6 @@
 import { getScraper } from './test-utils';
 import { QueryTweetsResponse } from './timeline-v1';
-import { Mention, Tweet } from './tweets';
+import { Mention, Tweet, getTweetAnonymous } from './tweets';
 import fs from 'fs';
 import path from 'path';
 
@@ -462,10 +462,10 @@ test('scraper can send a tweet with image and video', async () => {
 
   // Read test image and video files from the test-assets directory
   const imageBuffer = fs.readFileSync(
-    path.join(__dirname, '../test-assets/test-image.jpeg')
+    path.join(__dirname, '../test-assets/test-image.jpeg'),
   );
   const videoBuffer = fs.readFileSync(
-    path.join(__dirname, '../test-assets/test-video.mp4')
+    path.join(__dirname, '../test-assets/test-video.mp4'),
   );
 
   // Prepare media data array with both image and video
@@ -502,10 +502,10 @@ test('scraper can quote tweet with image and video', async () => {
 
   // Read test image and video files from the test-assets directory
   const imageBuffer = fs.readFileSync(
-    path.join(__dirname, '../test-assets/test-image.jpeg')
+    path.join(__dirname, '../test-assets/test-image.jpeg'),
   );
   const videoBuffer = fs.readFileSync(
-    path.join(__dirname, '../test-assets/test-video.mp4')
+    path.join(__dirname, '../test-assets/test-video.mp4'),
   );
 
   // Prepare media data array with both image and video
@@ -531,13 +531,11 @@ test('scraper can quote tweet with media', async () => {
 
   // Read test image file
   const imageBuffer = fs.readFileSync(
-    path.join(__dirname, '../test-assets/test-image.jpeg')
+    path.join(__dirname, '../test-assets/test-image.jpeg'),
   );
 
   // Prepare media data with the image
-  const mediaData = [
-    { data: imageBuffer, mediaType: 'image/jpeg' },
-  ];
+  const mediaData = [{ data: imageBuffer, mediaType: 'image/jpeg' }];
 
   // Send a quote tweet with the image attachment
   const response = await scraper.sendQuoteTweet(quoteText, quotedTweetId, {
@@ -555,13 +553,11 @@ test('sendTweetWithMedia successfully sends a tweet with media', async () => {
 
   // Read a test image file
   const imageBuffer = fs.readFileSync(
-    path.join(__dirname, '../test-assets/test-image.jpeg')
+    path.join(__dirname, '../test-assets/test-image.jpeg'),
   );
 
   // Prepare media data with the image
-  const mediaData = [
-    { data: imageBuffer, mediaType: 'image/jpeg' },
-  ];
+  const mediaData = [{ data: imageBuffer, mediaType: 'image/jpeg' }];
 
   // Send a tweet with the image attachment
   const result = await scraper.sendTweet(draftText, undefined, mediaData);
@@ -593,4 +589,23 @@ test('scraper can follow user', async () => {
 
   // Test should not throw an error
   await expect(scraper.followUser(username)).resolves.not.toThrow();
+}, 30000);
+
+test('scraper cannot get article using getTweet', async () => {
+  const scraper = await getScraper();
+  // X introducing article: http://x.com/i/article/1765821414056120320
+  const tweet = await scraper.getTweet('1765884209527394325');
+
+  expect(tweet).not.toBeNull();
+  expect(tweet?.text).toMatch(/https?:\/\/t.co\//);
+  expect(tweet?.urls[0]).toMatch(/https?:\/\/x.com\/i\/article\//);
+}, 30000);
+
+test('scraper can get article using getArticle', async () => {
+  const scraper = await getScraper();
+  // X introducing article: http://x.com/i/article/1765821414056120320
+  const article = await scraper.getArticle('1765884209527394325');
+
+  expect(article).not.toBeNull();
+  expect(article?.title).toMatch(/Introducing Articles on X/);
 }, 30000);

@@ -423,3 +423,41 @@ export function parseThreadedConversation(
 
   return tweets;
 }
+
+export interface TimelineArticle {
+  id: string;
+  articleId: string;
+  title: string;
+  previewText: string;
+  coverMediaUrl?: string;
+  text: string;
+}
+
+export function parseArticle(
+  conversation: ThreadedConversation,
+): TimelineArticle[] {
+  const articles: TimelineArticle[] = [];
+  for (const instruction of conversation.data
+    ?.threaded_conversation_with_injections_v2?.instructions ?? []) {
+    for (const entry of instruction.entries ?? []) {
+      const id = entry.content?.itemContent?.tweet_results?.result?.rest_id;
+      const article =
+        entry.content?.itemContent?.tweet_results?.result?.article
+          ?.article_results?.result;
+      if (!id || !article) continue;
+      const text =
+        article.content_state?.blocks
+          ?.map((block) => block.text)
+          .join('\n\n') ?? '';
+      articles.push({
+        id,
+        articleId: article.rest_id || '',
+        coverMediaUrl: article.cover_media?.media_info?.original_img_url,
+        previewText: article.preview_text || '',
+        text,
+        title: article.title || '',
+      });
+    }
+  }
+  return articles;
+}

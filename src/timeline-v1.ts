@@ -76,6 +76,50 @@ export interface SearchResultRaw {
   legacy?: LegacyTweetRaw;
 }
 
+export interface TimelineArticleResultRaw {
+  id?: string;
+  rest_id?: string;
+  title?: string;
+  preview_text?: string;
+  cover_media?: {
+    media_id?: string;
+    media_info?: {
+      original_img_url?: string;
+      original_img_height?: number;
+      original_img_width?: number;
+    };
+  };
+  content_state?: {
+    blocks?: {
+      key?: string;
+      data?: string;
+      text?: string;
+      entityRanges?: {
+        key?: number;
+        length?: number;
+        offset?: number;
+      }[];
+    }[];
+  };
+  entityMap?: {
+    key?: string;
+    value?: {
+      type?: string; // LINK, MEDIA, TWEET
+      mutability?: string;
+      data?: {
+        entityKey?: string;
+        url?: string;
+        tweetId?: string;
+        mediaItems?: {
+          localMediaId?: string;
+          mediaCategory?: string;
+          mediaId?: string;
+        }[];
+      };
+    };
+  }[];
+}
+
 export interface TimelineResultRaw {
   rest_id?: string;
   __typename?: string;
@@ -95,6 +139,11 @@ export interface TimelineResultRaw {
       result?: {
         text?: string;
       };
+    };
+  };
+  article?: {
+    article_results?: {
+      result?: TimelineArticleResultRaw;
     };
   };
   quoted_status_result?: {
