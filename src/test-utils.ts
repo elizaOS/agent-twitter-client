@@ -1,4 +1,4 @@
-import { ProxyAgent } from 'undici';
+import { ProxyAgent,setGlobalDispatcher } from 'undici';
 import { Scraper } from './scraper';
 import fs from 'fs';
 
@@ -96,6 +96,8 @@ export async function getScraper(
     }
 
     agent = new ProxyAgent(agentOptions);
+
+    setGlobalDispatcher(agent)
   }
 
   const scraper = new Scraper({
