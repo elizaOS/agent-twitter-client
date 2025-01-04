@@ -5,17 +5,40 @@ import { EventEmitter } from 'events';
 import type { SpeakerRequest, OccupancyUpdate } from '../types';
 import { Logger } from '../logger';
 
+/**
+ * Configuration object for ChatClient.
+ */
 interface ChatClientConfig {
+  /**
+   * The space ID (e.g., "1vOGwAbcdE...") for this audio space.
+   */
   spaceId: string;
+
+  /**
+   * The access token obtained from accessChat or the live_video_stream/status.
+   */
   accessToken: string;
+
+  /**
+   * The endpoint host for the chat server (e.g., "https://prod-chatman-ancillary-eu-central-1.pscp.tv").
+   */
   endpoint: string;
+
+  /**
+   * An instance of Logger for debug/info logs.
+   */
   logger: Logger;
 }
 
+/**
+ * ChatClient handles the WebSocket connection to the Twitter/Periscope chat API.
+ * It emits events such as "speakerRequest", "occupancyUpdate", "muteStateChanged", etc.
+ */
 export class ChatClient extends EventEmitter {
   private ws?: WebSocket;
   private connected = false;
-  private logger: Logger;
+
+  private readonly logger: Logger;
   private readonly spaceId: string;
   private readonly accessToken: string;
   private endpoint: string;
@@ -28,7 +51,10 @@ export class ChatClient extends EventEmitter {
     this.logger = config.logger;
   }
 
-  async connect() {
+  /**
+   * Establishes a WebSocket connection to the chat endpoint and sets up event handlers.
+   */
+  public async connect(): Promise<void> {
     const wsUrl = `${this.endpoint}/chatapi/v1/chatnow`.replace(
       'https://',
       'wss://',
@@ -45,9 +71,12 @@ export class ChatClient extends EventEmitter {
     await this.setupHandlers();
   }
 
+  /**
+   * Internal method to set up WebSocket event listeners (open, message, close, error).
+   */
   private setupHandlers(): Promise<void> {
     if (!this.ws) {
-      throw new Error('No WebSocket instance');
+      throw new Error('[ChatClient] No WebSocket instance available');
     }
 
     return new Promise((resolve, reject) => {
@@ -75,9 +104,13 @@ export class ChatClient extends EventEmitter {
     });
   }
 
-  private sendAuthAndJoin() {
+  /**
+   * Sends two WebSocket messages to authenticate and join the specified space.
+   */
+  private sendAuthAndJoin(): void {
     if (!this.ws) return;
 
+    // 1) Send authentication (access token)
     this.ws.send(
       JSON.stringify({
         payload: JSON.stringify({ access_token: this.accessToken }),
@@ -85,6 +118,7 @@ export class ChatClient extends EventEmitter {
       }),
     );
 
+    // 2) Send a "join" message specifying the room (space ID)
     this.ws.send(
       JSON.stringify({
         payload: JSON.stringify({
@@ -96,8 +130,18 @@ export class ChatClient extends EventEmitter {
     );
   }
 
-  reactWithEmoji(emoji: string) {
-    if (!this.ws) return;
+  /**
+   * Sends an emoji reaction to the chat server.
+   * @param emoji - The emoji string, e.g. '🔥', '🙏', etc.
+   */
+  public reactWithEmoji(emoji: string): void {
+    if (!this.ws || !this.connected) {
+      this.logger.warn(
+        '[ChatClient] Not connected or WebSocket missing; ignoring reactWithEmoji.',
+      );
+      return;
+    }
+
     const payload = JSON.stringify({
       body: JSON.stringify({ body: emoji, type: 2, v: 2 }),
       kind: 1,
@@ -117,15 +161,20 @@ export class ChatClient extends EventEmitter {
       }),
       type: 2,
     });
+
     this.ws.send(payload);
   }
 
-  private handleMessage(raw: string) {
+  /**
+   * Handles inbound WebSocket messages, parsing JSON payloads
+   * and emitting relevant events (speakerRequest, occupancyUpdate, etc.).
+   */
+  private handleMessage(raw: string): void {
     let msg: any;
     try {
       msg = JSON.parse(raw);
     } catch {
-      return;
+      return; // Invalid JSON, ignoring
     }
     if (!msg.payload) return;
 
@@ -134,6 +183,7 @@ export class ChatClient extends EventEmitter {
 
     const body = safeJson(payload.body);
 
+    // 1) Speaker request => "guestBroadcastingEvent=1"
     if (body.guestBroadcastingEvent === 1) {
       const req: SpeakerRequest = {
         userId: body.guestRemoteID,
@@ -144,6 +194,7 @@ export class ChatClient extends EventEmitter {
       this.emit('speakerRequest', req);
     }
 
+    // 2) Occupancy update => body.occupancy
     if (typeof body.occupancy === 'number') {
       const update: OccupancyUpdate = {
         occupancy: body.occupancy,
@@ -152,6 +203,7 @@ export class ChatClient extends EventEmitter {
       this.emit('occupancyUpdate', update);
     }
 
+    // 3) Mute/unmute => "guestBroadcastingEvent=16" (mute) or "17" (unmute)
     if (body.guestBroadcastingEvent === 16) {
       this.emit('muteStateChanged', {
         userId: body.guestRemoteID,
@@ -164,9 +216,19 @@ export class ChatClient extends EventEmitter {
         muted: false,
       });
     }
-    // Example of guest reaction
+
+    // 4) "guestBroadcastingEvent=12" => host accepted a speaker
+    if (body.guestBroadcastingEvent === 12) {
+      this.emit('newSpeakerAccepted', {
+        userId: body.guestRemoteID,
+        username: body.guestUsername,
+        sessionUUID: body.sessionUUID,
+      });
+    }
+
+    // 5) Reaction => body.type=2
     if (body?.type === 2) {
-      this.logger.info('[ChatClient] Emitting guest reaction event =>', body);
+      this.logger.info('[ChatClient] Emitting guestReaction =>', body);
       this.emit('guestReaction', {
         displayName: body.displayName,
         emoji: body.body,
@@ -174,7 +236,10 @@ export class ChatClient extends EventEmitter {
     }
   }
 
-  async disconnect() {
+  /**
+   * Closes the WebSocket connection if open, and resets internal state.
+   */
+  public async disconnect(): Promise<void> {
     if (this.ws) {
       this.logger.info('[ChatClient] Disconnecting...');
       this.ws.close();
@@ -184,6 +249,9 @@ export class ChatClient extends EventEmitter {
   }
 }
 
+/**
+ * Helper function to safely parse JSON without throwing.
+ */
 function safeJson(text: string): any {
   try {
     return JSON.parse(text);

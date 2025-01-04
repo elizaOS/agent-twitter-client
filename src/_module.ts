@@ -5,6 +5,7 @@ export type { QueryProfilesResponse, QueryTweetsResponse } from './timeline-v1';
 export type { Tweet } from './tweets';
 
 export { Space } from './spaces/core/Space'
+export { SpaceParticipant } from './spaces/core/SpaceParticipant'
 export { SttTtsPlugin } from './spaces/plugins/SttTtsPlugin'
 export { RecordToDiskPlugin } from './spaces/plugins/RecordToDiskPlugin'
 export { MonitorAudioPlugin } from './spaces/plugins/MonitorAudioPlugin'

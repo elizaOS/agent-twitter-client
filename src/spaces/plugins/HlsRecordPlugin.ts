@@ -1,83 +1,111 @@
-// src/plugins/HlsRecordPlugin.ts
-
 import { spawn, ChildProcessWithoutNullStreams } from 'child_process';
 import { Plugin, OccupancyUpdate } from '../types';
 import { Space } from '../core/Space';
 import { Logger } from '../logger';
 
 /**
- * Plugin that records the final Twitter Spaces HLS mix to a local file.
- * It waits for at least one listener to join (occupancy > 0),
- * then repeatedly attempts to get the HLS URL from Twitter
- * until it is available (HTTP 200), and finally spawns ffmpeg.
+ * HlsRecordPlugin
+ * ---------------
+ * Records the final Twitter Spaces HLS mix to a local .ts file using ffmpeg.
+ *
+ * Workflow:
+ *  - Wait for occupancy > 0 (i.e., at least one listener).
+ *  - Attempt to retrieve the HLS URL from Twitter (via scraper).
+ *  - If valid (HTTP 200), spawn ffmpeg to record the stream.
+ *  - If HLS not ready yet (HTTP 404), wait for next occupancy event.
+ *
+ * Lifecycle:
+ *  - onAttach(...) => minimal references, logger setup
+ *  - init(...) => fully runs once the Space is created (broadcastInfo ready)
+ *  - cleanup() => stop ffmpeg if running
  */
 export class HlsRecordPlugin implements Plugin {
   private logger?: Logger;
   private recordingProcess?: ChildProcessWithoutNullStreams;
   private isRecording = false;
+
   private outputPath?: string;
   private mediaKey?: string;
   private space?: Space;
 
+  /**
+   * You can optionally provide an outputPath in the constructor.
+   * Alternatively, it can be set via pluginConfig in onAttach/init.
+   */
   constructor(outputPath?: string) {
     this.outputPath = outputPath;
   }
 
   /**
+   * Called immediately after .use(plugin). We store references here
+   * (e.g., the space) and create a Logger based on pluginConfig.debug.
+   */
+  onAttach(params: { space: Space; pluginConfig?: Record<string, any> }): void {
+    this.space = params.space;
+
+    const debug = params.pluginConfig?.debug ?? false;
+    this.logger = new Logger(debug);
+
+    this.logger.info('[HlsRecordPlugin] onAttach => plugin attached');
+
+    // If outputPath was not passed in constructor, check pluginConfig
+    if (params.pluginConfig?.outputPath) {
+      this.outputPath = params.pluginConfig.outputPath;
+    }
+  }
+
+  /**
    * Called once the Space has fully initialized (broadcastInfo is ready).
-   * We store references and subscribe to "occupancyUpdate".
+   * We retrieve the media_key from the broadcast, subscribe to occupancy,
+   * and prepare for recording if occupancy > 0.
    */
   async init(params: { space: Space; pluginConfig?: Record<string, any> }) {
-    const spaceLogger = (params.space as any).logger as Logger | undefined;
-    if (spaceLogger) {
-      this.logger = spaceLogger;
-    }
-
+    // Merge plugin config again (in case it was not set in onAttach).
     if (params.pluginConfig?.outputPath) {
       this.outputPath = params.pluginConfig.outputPath;
     }
 
-    this.space = params.space;
-
-    const broadcastInfo = (params.space as any).broadcastInfo;
+    // Use the same logger from onAttach
+    const broadcastInfo = (this.space as any)?.broadcastInfo;
     if (!broadcastInfo || !broadcastInfo.broadcast?.media_key) {
-      this.logger?.warn(
-        '[HlsRecordPlugin] No media_key found in broadcastInfo',
-      );
+      this.logger?.warn('[HlsRecordPlugin] No media_key found in broadcastInfo');
       return;
     }
     this.mediaKey = broadcastInfo.broadcast.media_key;
 
+    // If no custom output path was provided, use a default
     const roomId = broadcastInfo.room_id || 'unknown_room';
     if (!this.outputPath) {
       this.outputPath = `/tmp/record_${roomId}.ts`;
     }
 
-    // Subscribe to occupancyUpdate
-    this.space.on('occupancyUpdate', (update: OccupancyUpdate) => {
+    this.logger?.info(
+        `[HlsRecordPlugin] init => ready to record. Output path="${this.outputPath}"`,
+    );
+
+    // Listen for occupancy updates
+    this.space?.on('occupancyUpdate', (update: OccupancyUpdate) => {
       this.handleOccupancyUpdate(update).catch((err) => {
-        this.logger?.error(
-          '[HlsRecordPlugin] handleOccupancyUpdate error =>',
-          err,
-        );
+        this.logger?.error('[HlsRecordPlugin] handleOccupancyUpdate =>', err);
       });
     });
   }
 
   /**
-   * Called each time occupancyUpdate is emitted.
-   * If occupancy > 0 and we're not recording yet, we attempt to fetch the HLS URL.
-   * If the URL is valid (HTTP 200), we launch ffmpeg.
+   * If occupancy > 0 and we're not recording yet, attempt to fetch the HLS URL
+   * from Twitter. If it's ready, spawn ffmpeg to record.
    */
   private async handleOccupancyUpdate(update: OccupancyUpdate) {
     if (!this.space || !this.mediaKey) return;
     if (this.isRecording) return;
-
-    // We only care if occupancy > 0 (at least one listener).
     if (update.occupancy <= 0) {
       this.logger?.debug('[HlsRecordPlugin] occupancy=0 => ignoring');
       return;
     }
+
+    this.logger?.debug(
+        `[HlsRecordPlugin] occupancy=${update.occupancy} => trying to fetch HLS URL...`,
+    );
 
     const scraper = (this.space as any).scraper;
     if (!scraper) {
@@ -85,15 +113,11 @@ export class HlsRecordPlugin implements Plugin {
       return;
     }
 
-    this.logger?.debug(
-      `[HlsRecordPlugin] occupancy=${update.occupancy} => trying to fetch HLS URL...`,
-    );
-
     try {
       const status = await scraper.getAudioSpaceStreamStatus(this.mediaKey);
       if (!status?.source?.location) {
         this.logger?.debug(
-          '[HlsRecordPlugin] occupancy>0 but no HLS URL => wait next update',
+            '[HlsRecordPlugin] occupancy>0 but no HLS URL => wait next update',
         );
         return;
       }
@@ -102,11 +126,10 @@ export class HlsRecordPlugin implements Plugin {
       const isReady = await this.waitForHlsReady(hlsUrl, 1);
       if (!isReady) {
         this.logger?.debug(
-          '[HlsRecordPlugin] HLS URL 404 => waiting next occupancy update...',
+            '[HlsRecordPlugin] HLS URL 404 => waiting next occupancy update...',
         );
         return;
       }
-
       await this.startRecording(hlsUrl);
     } catch (err) {
       this.logger?.error('[HlsRecordPlugin] handleOccupancyUpdate =>', err);
@@ -114,18 +137,52 @@ export class HlsRecordPlugin implements Plugin {
   }
 
   /**
+   * HEAD request to see if the HLS URL is returning 200 OK.
+   * maxRetries=1 => only try once here; rely on occupancy re-calls otherwise.
+   */
+  private async waitForHlsReady(
+      hlsUrl: string,
+      maxRetries: number,
+  ): Promise<boolean> {
+    let attempt = 0;
+    while (attempt < maxRetries) {
+      try {
+        const resp = await fetch(hlsUrl, { method: 'HEAD' });
+        if (resp.ok) {
+          this.logger?.debug(
+              `[HlsRecordPlugin] HLS is ready (attempt #${attempt + 1})`,
+          );
+          return true;
+        } else {
+          this.logger?.debug(
+              `[HlsRecordPlugin] HLS status=${resp.status}, retrying...`,
+          );
+        }
+      } catch (error) {
+        this.logger?.debug(
+            '[HlsRecordPlugin] HLS fetch error =>',
+            (error as Error).message,
+        );
+      }
+      attempt++;
+      await new Promise((r) => setTimeout(r, 2000));
+    }
+    return false;
+  }
+
+  /**
    * Spawns ffmpeg to record the HLS stream at the given URL.
    */
   private async startRecording(hlsUrl: string): Promise<void> {
     if (this.isRecording) {
-      this.logger?.debug('[HlsRecordPlugin] Already recording');
+      this.logger?.debug('[HlsRecordPlugin] Already recording, skipping...');
       return;
     }
     this.isRecording = true;
 
     if (!this.outputPath) {
       this.logger?.warn(
-        '[HlsRecordPlugin] No output path set, using /tmp/space_record.ts',
+          '[HlsRecordPlugin] No output path set, using /tmp/space_record.ts',
       );
       this.outputPath = '/tmp/space_record.ts';
     }
@@ -141,6 +198,7 @@ export class HlsRecordPlugin implements Plugin {
       this.outputPath,
     ]);
 
+    // Capture stderr for errors or debug info
     this.recordingProcess.stderr.on('data', (chunk) => {
       const msg = chunk.toString();
       if (msg.toLowerCase().includes('error')) {
@@ -153,8 +211,8 @@ export class HlsRecordPlugin implements Plugin {
     this.recordingProcess.on('close', (code) => {
       this.isRecording = false;
       this.logger?.info(
-        '[HlsRecordPlugin] Recording process closed => code=',
-        code,
+          '[HlsRecordPlugin] Recording process closed => code=',
+          code,
       );
     });
 
@@ -164,42 +222,8 @@ export class HlsRecordPlugin implements Plugin {
   }
 
   /**
-   * HEAD request to see if the HLS URL is returning 200 OK.
-   * maxRetries=1 means we'll just try once here, and rely on occupancyUpdate re-calls for further tries.
-   */
-  private async waitForHlsReady(
-    hlsUrl: string,
-    maxRetries: number,
-  ): Promise<boolean> {
-    let attempt = 0;
-    while (attempt < maxRetries) {
-      try {
-        const resp = await fetch(hlsUrl, { method: 'HEAD' });
-        if (resp.ok) {
-          this.logger?.debug(
-            `[HlsRecordPlugin] HLS is ready (attempt #${attempt + 1})`,
-          );
-          return true;
-        } else {
-          this.logger?.debug(
-            `[HlsRecordPlugin] HLS status=${resp.status}, retrying...`,
-          );
-        }
-      } catch (error) {
-        this.logger?.debug(
-          '[HlsRecordPlugin] HLS fetch error:',
-          (error as Error).message,
-        );
-      }
-
-      attempt++;
-      await new Promise((r) => setTimeout(r, 2000));
-    }
-    return false;
-  }
-
-  /**
    * Called when the plugin is cleaned up (e.g. space.stop()).
+   * Kills ffmpeg if still running.
    */
   cleanup(): void {
     if (this.isRecording && this.recordingProcess) {
