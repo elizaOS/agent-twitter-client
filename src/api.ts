@@ -126,16 +126,16 @@ export async function requestApi<T>(
       chunks += new TextDecoder().decode(value);
 
       // Log chunk for debugging (optional)
-      console.log('Received chunk:', new TextDecoder().decode(value));
+      // console.log('Received chunk:', new TextDecoder().decode(value));
     }
 
     // Now try to parse the complete accumulated response
     try {
-      console.log('attempting to parse chunks', chunks);
+      // console.log('attempting to parse chunks', chunks);
       const value = JSON.parse(chunks);
       return { success: true, value };
     } catch (e) {
-      console.log('parsing chunks failed, sending as raw text');
+      // console.log('parsing chunks failed, sending as raw text');
       // If we can't parse as JSON, return the raw text
       return { success: true, value: { text: chunks } as any };
     }
