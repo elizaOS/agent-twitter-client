@@ -2,7 +2,7 @@
   "name": "agent-twitter-client-grokky",
   "description": "A twitter client for agents with Grok support.",
   "keywords": [],
-  "version": "0.0.4",
+  "version": "0.0.5",
   "main": "dist/default/cjs/index.js",
   "types": "./dist/types/index.d.ts",
   "exports": {
