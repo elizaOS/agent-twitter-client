@@ -1,8 +1,8 @@
 {
-  "name": "agent-twitter-client",
+  "name": "agent-twitter-client-grokky",
   "description": "A twitter client for agents",
   "keywords": [],
-  "version": "0.0.18",
+  "version": "0.0.1",
   "main": "dist/default/cjs/index.js",
   "types": "./dist/types/index.d.ts",
   "exports": {
@@ -16,7 +16,7 @@
       "require": "./dist/default/cjs/index.js"
     }
   },
-  "author": "elizaOS",
+  "author": "0x4337",
   "license": "MIT",
   "scripts": {
     "build": "rimraf dist && rollup -c",

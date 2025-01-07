@@ -3,7 +3,16 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 async function main() {
-  // const scraper = new Scraper();
+  const scraper = new Scraper();
+
+  const conversationId = await scraper.createGrokConversation();
+  console.log('conversationId', conversationId);
+
+  const response = await scraper.grokChat({
+    conversationId,
+    messages: [{ role: 'user', content: 'What is the weather in Tokyo?' }],
+  });
+  console.log('response', response);
   // // v1 login
   // await scraper.login(
   //   process.env.TWITTER_USERNAME,
