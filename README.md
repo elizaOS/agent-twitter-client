@@ -1,6 +1,6 @@
-# agent-twitter-client
+# agent-twitter-client-grokky
 
-This is a modified version of [@the-convocation/twitter-scraper](https://github.com/the-convocation/twitter-scraper) with added functionality for sending tweets and retweets. This package does not require the Twitter API to use and will run in both the browser and server.
+This is a fork of [elizaOS/agent-twitter-client](https://github.com/elizaOS/agent-twitter-client) with added functionality for interacting with Grok, X's AI assistant. This package does not require the official Twitter API or Grok API, allowing it to leverage real-time Twitter data for enhanced capabilities. It can be used in both browser and server environments.
 
 ## Installation
 
