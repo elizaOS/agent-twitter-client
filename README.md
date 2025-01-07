@@ -5,7 +5,7 @@ This is a fork of [elizaOS/agent-twitter-client](https://github.com/elizaOS/agen
 ## Installation
 
 ```sh
-npm install agent-twitter-client
+npm install agent-twitter-client-grokky
 ```
 
 ## Setup
