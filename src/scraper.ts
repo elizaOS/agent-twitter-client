@@ -53,13 +53,8 @@ import {
   retweet,
   createCreateNoteTweetRequest,
   createCreateLongTweetRequest,
-  getArticle,
 } from './tweets';
-import {
-  parseTimelineTweetsV2,
-  TimelineArticle,
-  TimelineV2,
-} from './timeline-v2';
+import { parseTimelineTweetsV2, TimelineV2 } from './timeline-v2';
 import { fetchHomeTimeline } from './timeline-home';
 import { fetchFollowingTimeline } from './timeline-following';
 import {
@@ -91,6 +86,14 @@ import {
   LoginTwitterTokenResponse,
   Subtopic,
 } from './types/spaces';
+import {
+  GrokChatOptions,
+  GrokChatResponse,
+  GrokConversation,
+  GrokRequest,
+  GrokResponseMessage,
+} from './grok';
+import { GrokMessage } from './grok.js';
 
 const twUrl = 'https://twitter.com';
 const UserTweetsUrl =
@@ -474,14 +477,12 @@ export class Scraper {
     text: string,
     replyToTweetId?: string,
     mediaData?: { data: Buffer; mediaType: string }[],
-    hideLinkPreview?: boolean,
   ) {
     return await createCreateTweetRequest(
       text,
       this.auth,
       replyToTweetId,
       mediaData,
-      hideLinkPreview,
     );
   }
 
@@ -1016,11 +1017,142 @@ export class Scraper {
   }
 
   /**
-   * Fetches a article (long form tweet) by its ID.
-   * @param id The ID of the article to fetch. In the format of (http://x.com/i/article/id)
-   * @returns The {@link TimelineArticle} object, or `null` if it couldn't be fetched.
+   * Main method for interacting with Grok in a chat-like manner.
+   * This method handles sending messages to Grok and receiving responses, including handling rate limits and streaming responses.
+   * @param options - The options for the Grok chat interaction
+   * @param options.conversationId - Optional ID of an existing conversation. If not provided, a new conversation will be created
+   * @param options.messages - Array of messages in the conversation, following OpenAI-style format
+   * @param options.returnSearchResults - Whether to include web search results in the response (default: true)
+   * @param options.returnCitations - Whether to include citations in the response (default: true)
+   * @returns A response object containing the conversation ID, Grok's message, full message history, and optional web results
+   * @throws {ApiError} If the API request fails
    */
-  public getArticle(id: string): Promise<TimelineArticle | null> {
-    return getArticle(id, this.auth);
+  public async grokChat(options: GrokChatOptions): Promise<GrokChatResponse> {
+    let { conversationId, messages } = options;
+
+    // Create new conversation if none provided
+    if (!conversationId) {
+      conversationId = await this.createGrokConversation();
+    }
+
+    // Convert OpenAI-style messages to Grok's internal format
+    // Grok uses sender=1 for user messages and sender=2 for assistant messages
+    const responses: GrokResponseMessage[] = messages.map(
+      (msg: GrokMessage) => ({
+        message: msg.content,
+        sender: msg.role === 'user' ? 1 : 2,
+        // Add extra fields only for user messages
+        ...(msg.role === 'user' && {
+          promptSource: '',
+          fileAttachments: [],
+        }),
+      }),
+    );
+
+    // Construct the request payload for Grok API
+    const payload: GrokRequest = {
+      responses,
+      systemPromptName: '',
+      grokModelOptionId: 'grok-2a',
+      conversationId,
+      returnSearchResults: options.returnSearchResults ?? true,
+      returnCitations: options.returnCitations ?? true,
+      promptMetadata: {
+        promptSource: 'NATURAL',
+        action: 'INPUT',
+      },
+      imageGenerationCount: 4,
+      requestFeatures: {
+        eagerTweets: true,
+        serverHistory: true,
+      },
+    };
+
+    // Make the API request to Grok
+    const res = await requestApi<{ text: string }>(
+      'https://api.x.com/2/grok/add_response.json',
+      this.auth,
+      'POST',
+      undefined,
+      payload,
+    );
+
+    if (!res.success) {
+      throw res.err;
+    }
+
+    // Parse response chunks - Grok may return either a single response or multiple chunks
+    let chunks: any[];
+    if (res.value.text) {
+      // For streaming responses, split text into chunks and parse each JSON chunk
+      chunks = res.value.text
+        .split('\n')
+        .filter(Boolean)
+        .map((chunk: any) => JSON.parse(chunk));
+    } else {
+      // For single responses (like rate limiting), wrap in array
+      chunks = [res.value];
+    }
+
+    // Check if we hit rate limits by examining first chunk
+    const firstChunk = chunks[0];
+    if (firstChunk.result?.responseType === 'limiter') {
+      return {
+        conversationId,
+        message: firstChunk.result.message,
+        messages: [
+          ...messages,
+          { role: 'assistant', content: firstChunk.result.message },
+        ],
+        rateLimit: {
+          isRateLimited: true,
+          message: firstChunk.result.message,
+          upsellInfo: firstChunk.result.upsell
+            ? {
+                usageLimit: firstChunk.result.upsell.usageLimit,
+                quotaDuration: `${firstChunk.result.upsell.quotaDurationCount} ${firstChunk.result.upsell.quotaDurationPeriod}`,
+                title: firstChunk.result.upsell.title,
+                message: firstChunk.result.upsell.message,
+              }
+            : undefined,
+        },
+      };
+    }
+
+    // Combine all message chunks into single response
+    const fullMessage = chunks
+      .filter((chunk: any) => chunk.result?.message)
+      .map((chunk: any) => chunk.result.message)
+      .join('');
+
+    // Return complete response with conversation history and metadata
+    return {
+      conversationId,
+      message: fullMessage,
+      messages: [...messages, { role: 'assistant', content: fullMessage }],
+      webResults: chunks.find((chunk: any) => chunk.result?.webResults)?.result
+        .webResults,
+      metadata: chunks[0],
+    };
+  }
+
+  /**
+   * Creates a new conversation with Grok.
+   * @returns The ID of the newly created conversation
+   * @throws {ApiError} If the API request fails
+   * @internal
+   */
+  private async createGrokConversation(): Promise<string> {
+    const res = await requestApi<GrokConversation>(
+      'https://x.com/i/api/graphql/6cmfJY3d7EPWuCSXWrkOFg/CreateGrokConversation',
+      this.auth,
+      'POST',
+    );
+
+    if (!res.success) {
+      throw res.err;
+    }
+
+    return res.value.data.create_grok_conversation.conversation_id;
   }
 }

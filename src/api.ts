@@ -51,6 +51,7 @@ export async function requestApi<T>(
   auth: TwitterAuth,
   method: 'GET' | 'POST' = 'GET',
   platform: PlatformExtensions = new Platform(),
+  body?: any,
 ): Promise<RequestApiResult<T>> {
   const headers = new Headers();
   await auth.installTo(headers, url);
@@ -63,12 +64,12 @@ export async function requestApi<T>(
         method,
         headers,
         credentials: 'include',
+        ...(body && { body: JSON.stringify(body) }),
       });
     } catch (err) {
       if (!(err instanceof Error)) {
         throw err;
       }
-
       return {
         success: false,
         err: new Error('Failed to perform request.'),
@@ -103,13 +104,54 @@ export async function requestApi<T>(
     };
   }
 
-  const value: T = await res.json();
-  if (res.headers.get('x-rate-limit-incoming') == '0') {
-    auth.deleteToken();
-    return { success: true, value };
-  } else {
+  // Check if response is chunked
+  const transferEncoding = res.headers.get('transfer-encoding');
+  if (transferEncoding === 'chunked') {
+    // Handle streaming response
+    const reader = res.body?.getReader();
+    if (!reader) {
+      return {
+        success: false,
+        err: new Error('No readable stream available'),
+      };
+    }
+
+    let chunks: any = '';
+    // Read all chunks before attempting to parse
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      // Convert chunk to text and append
+      chunks += new TextDecoder().decode(value);
+
+      // Log chunk for debugging (optional)
+      console.log('Received chunk:', new TextDecoder().decode(value));
+    }
+
+    // Now try to parse the complete accumulated response
+    try {
+      console.log('attempting to parse chunks', chunks);
+      const value = JSON.parse(chunks);
+      return { success: true, value };
+    } catch (e) {
+      console.log('parsing chunks failed, sending as raw text');
+      // If we can't parse as JSON, return the raw text
+      return { success: true, value: { text: chunks } as any };
+    }
+  }
+
+  // Handle non-streaming responses as before
+  const contentType = res.headers.get('content-type');
+  if (contentType && contentType.includes('application/json')) {
+    const value: T = await res.json();
+    if (res.headers.get('x-rate-limit-incoming') == '0') {
+      auth.deleteToken();
+    }
     return { success: true, value };
   }
+
+  return { success: true, value: {} as T };
 }
 
 /** @internal */
