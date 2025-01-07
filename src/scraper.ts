@@ -91,11 +91,7 @@ import {
   grokChat,
   GrokChatOptions,
   GrokChatResponse,
-  GrokConversation,
-  GrokRequest,
-  GrokResponseMessage,
 } from './grok';
-import { GrokMessage } from './grok.js';
 
 const twUrl = 'https://twitter.com';
 const UserTweetsUrl =
