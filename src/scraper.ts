@@ -53,8 +53,13 @@ import {
   retweet,
   createCreateNoteTweetRequest,
   createCreateLongTweetRequest,
+  getArticle,
 } from './tweets';
-import { parseTimelineTweetsV2, TimelineV2 } from './timeline-v2';
+import {
+  parseTimelineTweetsV2,
+  TimelineArticle,
+  TimelineV2,
+} from './timeline-v2';
 import { fetchHomeTimeline } from './timeline-home';
 import { fetchFollowingTimeline } from './timeline-following';
 import {
@@ -1012,6 +1017,15 @@ export class Scraper {
     const loginResponse = await this.loginTwitterToken(periscopeToken);
 
     return loginResponse.cookie;
+  }
+
+  /**
+   * Fetches a article (long form tweet) by its ID.
+   * @param id The ID of the article to fetch. In the format of (http://x.com/i/article/id)
+   * @returns The {@link TimelineArticle} object, or `null` if it couldn't be fetched.
+   */
+  public getArticle(id: string): Promise<TimelineArticle | null> {
+    return getArticle(id, this.auth);
   }
 
   /**
