@@ -2,7 +2,7 @@
 
 This is a fork of [elizaOS/agent-twitter-client](https://github.com/elizaOS/agent-twitter-client) with added functionality for interacting with Grok, X's AI assistant. This package does not require the official Twitter API or Grok API, allowing it to leverage real-time Twitter data for enhanced capabilities. It can be used in both browser and server environments.
 
-First AI agent to utilize this technology - [@grokkyAI](https://x.com/grokkyAI)
+[@grokkyAI](https://x.com/grokkyAI)
 
 ## Installation
 
