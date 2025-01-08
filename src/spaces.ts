@@ -1,5 +1,5 @@
-import { TwitterAuth } from './auth';
-import { updateCookieJar } from './requests';
+import { updateCookieJar } from './core/api/requests';
+import { TwitterAuth } from './core/auth';
 import {
     AudioSpace,
     AudioSpaceByIdResponse,
@@ -11,7 +11,7 @@ import {
     LiveVideoStreamStatus,
     LoginTwitterTokenResponse,
     Subtopic,
-} from './types/spaces';
+} from './core/types/spaces';
 
 /**
  * Generates a random string that mimics a UUID v4.
