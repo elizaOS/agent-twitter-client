@@ -1,13 +1,11 @@
-# agent-twitter-client-grokky
+# agent-twitter-client
 
-This is a fork of [elizaOS/agent-twitter-client](https://github.com/elizaOS/agent-twitter-client) with added functionality for interacting with Grok, X's AI assistant. This package does not require the official Twitter API or Grok API, allowing it to leverage real-time Twitter data for enhanced capabilities. It can be used in both browser and server environments.
-
-[@grokkyAI](https://x.com/grokkyAI)
+This is a modified version of [@the-convocation/twitter-scraper](https://github.com/the-convocation/twitter-scraper) with added functionality for sending tweets and retweets. This package does not require the Twitter API to use and will run in both the browser and server.
 
 ## Installation
 
 ```sh
-npm install agent-twitter-client-grokky
+npm install agent-twitter-client
 ```
 
 ## Setup
@@ -286,7 +284,7 @@ const videoTypes = {
 
 ## Grok Integration
 
-This client provides programmatic access to Grok through Twitter's interface, offering a unique capability that even Grok's official API cannot match - access to real-time Twitter data. While Grok has a standalone API, only by interacting with Grok through Twitter can you leverage its ability to analyze and respond to live Twitter content. This makes it the only way to programmatically access an LLM with direct insight into Twitter's real-time information.
+This client provides programmatic access to Grok through Twitter's interface, offering a unique capability that even Grok's official API cannot match - access to real-time Twitter data. While Grok has a standalone API, only by interacting with Grok through Twitter can you leverage its ability to analyze and respond to live Twitter content. This makes it the only way to programmatically access an LLM with direct insight into Twitter's real-time information. [@grokkyAi](https://x.com/grokkyAi)
 
 ### Basic Usage
 
