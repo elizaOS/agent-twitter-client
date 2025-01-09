@@ -120,7 +120,7 @@ async function main() {
     console.log('[Test] Speaker request =>', req);
     await space.approveSpeaker(req.userId, req.sessionUUID);
 
-    // Remove the speaker after 10 seconds (testing only)
+    // Remove the speaker after 60 seconds (testing only)
     setTimeout(() => {
       console.log(
         `[Test] Removing speaker => userId=${req.userId} (after 60s)`,

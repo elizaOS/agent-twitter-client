@@ -216,7 +216,11 @@ const tweet = await scraper.getTweet('1234567890123456789');
 const sendTweetResults = await scraper.sendTweet('Hello world!');
 
 // Send a quote tweet - Media files are optional
-const sendQuoteTweetResults = await scraper.sendQuoteTweet('Hello world!', '1234567890123456789', ['mediaFile1', 'mediaFile2']);
+const sendQuoteTweetResults = await scraper.sendQuoteTweet(
+  'Hello world!',
+  '1234567890123456789',
+  ['mediaFile1', 'mediaFile2'],
+);
 
 // Retweet a tweet
 const retweetResults = await scraper.retweet('1234567890123456789');
@@ -228,48 +232,133 @@ const likeTweetResults = await scraper.likeTweet('1234567890123456789');
 ## Sending Tweets with Media
 
 ### Media Handling
+
 The scraper requires media files to be processed into a specific format before sending:
+
 - Media must be converted to Buffer format
 - Each media file needs its MIME type specified
 - This helps the scraper distinguish between image and video processing models
 
 ### Basic Tweet with Media
+
 ```ts
 // Example: Sending a tweet with media attachments
 const mediaData = [
   {
     data: fs.readFileSync('path/to/image.jpg'),
-    mediaType: 'image/jpeg'
+    mediaType: 'image/jpeg',
   },
   {
     data: fs.readFileSync('path/to/video.mp4'),
-    mediaType: 'video/mp4'
-  }
+    mediaType: 'video/mp4',
+  },
 ];
 
 await scraper.sendTweet('Hello world!', undefined, mediaData);
 ```
 
 ### Supported Media Types
+
 ```ts
 // Image formats and their MIME types
 const imageTypes = {
-  '.jpg':  'image/jpeg',
+  '.jpg': 'image/jpeg',
   '.jpeg': 'image/jpeg',
-  '.png':  'image/png',
-  '.gif':  'image/gif'
+  '.png': 'image/png',
+  '.gif': 'image/gif',
 };
 
 // Video format
 const videoTypes = {
-  '.mp4': 'video/mp4'
+  '.mp4': 'video/mp4',
 };
 ```
 
-
 ### Media Upload Limitations
+
 - Maximum 4 images per tweet
 - Only 1 video per tweet
 - Maximum video file size: 512MB
 - Supported image formats: JPG, PNG, GIF
 - Supported video format: MP4
+
+## Grok Integration
+
+This client provides programmatic access to Grok through Twitter's interface, offering a unique capability that even Grok's official API cannot match - access to real-time Twitter data. While Grok has a standalone API, only by interacting with Grok through Twitter can you leverage its ability to analyze and respond to live Twitter content. This makes it the only way to programmatically access an LLM with direct insight into Twitter's real-time information. [@grokkyAi](https://x.com/grokkyAi)
+
+### Basic Usage
+
+```ts
+const scraper = new Scraper();
+await scraper.login('username', 'password');
+
+// Start a new conversation
+const response = await scraper.grokChat({
+  messages: [{ role: 'user', content: 'What are your thoughts on AI?' }],
+});
+
+console.log(response.message); // Grok's response
+console.log(response.messages); // Full conversation history
+```
+
+If no `conversationId` is provided, the client will automatically create a new conversation.
+
+### Handling Rate Limits
+
+Grok has rate limits of 25 messages every 2 hours for non-premium accounts. The client provides rate limit information in the response:
+
+```ts
+const response = await scraper.grokChat({
+  messages: [{ role: 'user', content: 'Hello!' }],
+});
+
+if (response.rateLimit?.isRateLimited) {
+  console.log(response.rateLimit.message);
+  console.log(response.rateLimit.upsellInfo); // Premium upgrade information
+}
+```
+
+### Response Types
+
+The Grok integration includes TypeScript types for better development experience:
+
+```ts
+interface GrokChatOptions {
+  messages: GrokMessage[];
+  conversationId?: string;
+  returnSearchResults?: boolean;
+  returnCitations?: boolean;
+}
+
+interface GrokChatResponse {
+  conversationId: string;
+  message: string;
+  messages: GrokMessage[];
+  webResults?: any[];
+  metadata?: any;
+  rateLimit?: GrokRateLimit;
+}
+```
+
+### Advanced Usage
+
+```ts
+const response = await scraper.grokChat({
+  messages: [{ role: 'user', content: 'Research quantum computing' }],
+  returnSearchResults: true, // Include web search results
+  returnCitations: true, // Include citations for information
+});
+
+// Access web results if available
+if (response.webResults) {
+  console.log('Sources:', response.webResults);
+}
+
+// Full conversation with history
+console.log('Conversation:', response.messages);
+```
+
+### Limitations
+
+- Message history prefilling is currently limited due to unofficial API usage
+- Rate limits are enforced (25 messages/2 hours for non-premium)

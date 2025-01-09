@@ -1,42 +1,57 @@
-// src/plugins/IdleMonitorPlugin.ts
-
 import { Plugin, AudioDataWithUser } from '../types';
 import { Space } from '../core/Space';
+import { Logger } from '../logger';
 
 /**
- * Plugin that tracks the last speaker audio timestamp
- * and the last local audio timestamp to detect overall silence.
+ * IdleMonitorPlugin
+ * -----------------
+ * Monitors silence in both remote speaker audio and local (pushed) audio.
+ * If no audio is detected for a specified duration, it emits an 'idleTimeout' event on the space.
  */
 export class IdleMonitorPlugin implements Plugin {
   private space?: Space;
+  private logger?: Logger;
+
   private lastSpeakerAudioMs = Date.now();
   private lastLocalAudioMs = Date.now();
   private checkInterval?: NodeJS.Timeout;
 
   /**
-   * @param idleTimeoutMs How many ms of silence before triggering idle (default 60s)
-   * @param checkEveryMs Interval for checking silence (default 10s)
+   * @param idleTimeoutMs The duration (in ms) of total silence before triggering idle. (Default: 60s)
+   * @param checkEveryMs  How frequently (in ms) to check for silence. (Default: 10s)
    */
   constructor(
-    private idleTimeoutMs: number = 60_000,
-    private checkEveryMs: number = 10_000,
+      private idleTimeoutMs: number = 60_000,
+      private checkEveryMs: number = 10_000,
   ) {}
 
-  onAttach(space: Space) {
-    this.space = space;
-    console.log('[IdleMonitorPlugin] onAttach => plugin attached');
+  /**
+   * Called immediately after .use(plugin).
+   * Allows for minimal setup, including obtaining a debug logger if desired.
+   */
+  onAttach(params: { space: Space; pluginConfig?: Record<string, any> }): void {
+    this.space = params.space;
+    const debug = params.pluginConfig?.debug ?? false;
+    this.logger = new Logger(debug);
+
+    this.logger.info('[IdleMonitorPlugin] onAttach => plugin attached');
   }
 
+  /**
+   * Called once the space has fully initialized (basic mode).
+   * We set up idle checks and override pushAudio to detect local audio activity.
+   */
   init(params: { space: Space; pluginConfig?: Record<string, any> }): void {
     this.space = params.space;
-    console.log('[IdleMonitorPlugin] init => setting up idle checks');
+    this.logger?.info('[IdleMonitorPlugin] init => setting up idle checks');
 
     // Update lastSpeakerAudioMs on incoming speaker audio
-    this.space.on('audioDataFromSpeaker', (data: AudioDataWithUser) => {
+    // (Here we're hooking into an event triggered by Space for each speaker's PCM data.)
+    this.space.on('audioDataFromSpeaker', (_data: AudioDataWithUser) => {
       this.lastSpeakerAudioMs = Date.now();
     });
 
-    // Patch space.pushAudio to update lastLocalAudioMs
+    // Patch space.pushAudio to track local audio
     const originalPushAudio = this.space.pushAudio.bind(this.space);
     this.space.pushAudio = (samples, sampleRate) => {
       this.lastLocalAudioMs = Date.now();
@@ -47,23 +62,25 @@ export class IdleMonitorPlugin implements Plugin {
     this.checkInterval = setInterval(() => this.checkIdle(), this.checkEveryMs);
   }
 
+  /**
+   * Checks if we've exceeded idleTimeoutMs with no audio activity.
+   * If so, emits an 'idleTimeout' event on the space with { idleMs } info.
+   */
   private checkIdle() {
     const now = Date.now();
     const lastAudio = Math.max(this.lastSpeakerAudioMs, this.lastLocalAudioMs);
     const idleMs = now - lastAudio;
 
     if (idleMs >= this.idleTimeoutMs) {
-      console.log(
-        '[IdleMonitorPlugin] idleTimeout => no audio for',
-        idleMs,
-        'ms',
+      this.logger?.warn(
+          `[IdleMonitorPlugin] idleTimeout => no audio for ${idleMs}ms`,
       );
       this.space?.emit('idleTimeout', { idleMs });
     }
   }
 
   /**
-   * Returns how many ms have passed since any audio was detected.
+   * Returns how many milliseconds have passed since any audio was detected (local or speaker).
    */
   public getIdleTimeMs(): number {
     const now = Date.now();
@@ -71,8 +88,11 @@ export class IdleMonitorPlugin implements Plugin {
     return now - lastAudio;
   }
 
+  /**
+   * Cleans up resources (interval) when the plugin is removed or space stops.
+   */
   cleanup(): void {
-    console.log('[IdleMonitorPlugin] cleanup => stopping idle checks');
+    this.logger?.info('[IdleMonitorPlugin] cleanup => stopping idle checks');
     if (this.checkInterval) {
       clearInterval(this.checkInterval);
       this.checkInterval = undefined;

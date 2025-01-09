@@ -19,7 +19,12 @@ import {
   TTweetv2UserField,
 } from 'twitter-api-v2';
 
-
+import {
+  createGrokConversation,
+  grokChat,
+  GrokChatOptions,
+  GrokChatResponse,
+} from '../grok';
 
 const twUrl = 'https://twitter.com';
 const UserTweetsUrl =
@@ -951,5 +956,26 @@ export class Scraper {
    */
   public getArticle(id: string): Promise<TimelineArticle | null> {
     return getArticle(id, this.auth);
+  }
+
+  /**
+   * Creates a new conversation with Grok.
+   * @returns A promise that resolves to the conversation ID string.
+   */
+  public async createGrokConversation(): Promise<string> {
+    return await createGrokConversation(this.auth);
+  }
+
+  /**
+   * Interact with Grok in a chat-like manner.
+   * @param options The options for the Grok chat interaction.
+   * @param {GrokMessage[]} options.messages - Array of messages in the conversation.
+   * @param {string} [options.conversationId] - Optional ID of an existing conversation.
+   * @param {boolean} [options.returnSearchResults] - Whether to return search results.
+   * @param {boolean} [options.returnCitations] - Whether to return citations.
+   * @returns A promise that resolves to the Grok chat response.
+   */
+  public async grokChat(options: GrokChatOptions): Promise<GrokChatResponse> {
+    return await grokChat(options, this.auth);
   }
 }
