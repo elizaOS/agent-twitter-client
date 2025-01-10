@@ -21,8 +21,8 @@ export class IdleMonitorPlugin implements Plugin {
    * @param checkEveryMs  How frequently (in ms) to check for silence. (Default: 10s)
    */
   constructor(
-      private idleTimeoutMs: number = 60_000,
-      private checkEveryMs: number = 10_000,
+    private idleTimeoutMs: number = 60_000,
+    private checkEveryMs: number = 10_000,
   ) {}
 
   /**
@@ -73,7 +73,7 @@ export class IdleMonitorPlugin implements Plugin {
 
     if (idleMs >= this.idleTimeoutMs) {
       this.logger?.warn(
-          `[IdleMonitorPlugin] idleTimeout => no audio for ${idleMs}ms`,
+        `[IdleMonitorPlugin] idleTimeout => no audio for ${idleMs}ms`,
       );
       this.space?.emit('idleTimeout', { idleMs });
     }

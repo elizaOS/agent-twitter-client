@@ -11,7 +11,8 @@ import { Logger } from '../logger';
  * Usage:
  *   const plugin = new MonitorAudioPlugin(48000, /* debug= *\/ true);
  *   space.use(plugin);
-*/
+ */
+
 export class MonitorAudioPlugin implements Plugin {
   private ffplay?: ChildProcessWithoutNullStreams;
   private logger: Logger;
@@ -20,10 +21,7 @@ export class MonitorAudioPlugin implements Plugin {
    * @param sampleRate  The expected PCM sample rate (e.g. 16000 or 48000).
    * @param debug       If true, enables debug logging via Logger.
    */
-  constructor(
-      private readonly sampleRate = 48000,
-      debug = false,
-  ) {
+  constructor(private readonly sampleRate = 48000, debug = false) {
     this.logger = new Logger(debug);
 
     // Spawn ffplay to read raw PCM (s16le) on stdin
@@ -51,7 +49,7 @@ export class MonitorAudioPlugin implements Plugin {
     });
 
     this.logger.info(
-        `[MonitorAudioPlugin] Started ffplay for real-time monitoring (sampleRate=${this.sampleRate})`
+      `[MonitorAudioPlugin] Started ffplay for real-time monitoring (sampleRate=${this.sampleRate})`,
     );
   }
 
@@ -62,7 +60,7 @@ export class MonitorAudioPlugin implements Plugin {
   onAudioData(data: AudioDataWithUser): void {
     // Log debug info
     this.logger.debug(
-        `[MonitorAudioPlugin] onAudioData => userId=${data.userId}, samples=${data.samples.length}, sampleRate=${data.sampleRate}`,
+      `[MonitorAudioPlugin] onAudioData => userId=${data.userId}, samples=${data.samples.length}, sampleRate=${data.sampleRate}`,
     );
 
     if (!this.ffplay?.stdin.writable) {

@@ -78,24 +78,24 @@ export class ChatClient extends EventEmitter {
     }
 
     return new Promise((resolve, reject) => {
-      this.ws!.on('open', () => {
+      this.ws?.on('open', () => {
         this.logger.info('[ChatClient] Connected');
         this.connected = true;
         this.sendAuthAndJoin();
         resolve();
       });
 
-      this.ws!.on('message', (data: { toString: () => string }) => {
+      this.ws?.on('message', (data: { toString: () => string }) => {
         this.handleMessage(data.toString());
       });
 
-      this.ws!.on('close', () => {
+      this.ws?.on('close', () => {
         this.logger.info('[ChatClient] Closed');
         this.connected = false;
         this.emit('disconnected');
       });
 
-      this.ws!.on('error', (err) => {
+      this.ws?.on('error', (err) => {
         this.logger.error('[ChatClient] Error =>', err);
         reject(err);
       });

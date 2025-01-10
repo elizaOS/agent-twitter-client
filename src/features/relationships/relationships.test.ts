@@ -1,4 +1,4 @@
-import { getScraper } from "../../core/utils/test-utils";
+import { getScraper } from '../../core/utils/test-utils';
 
 test('scraper can get profile followers', async () => {
   const scraper = await getScraper();

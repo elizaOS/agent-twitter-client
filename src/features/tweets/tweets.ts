@@ -1,7 +1,20 @@
 import { addApiFeatures, requestApi, updateCookieJar } from '@/core/api';
 import { apiRequestFactory } from '@/core/api/api-data';
 import { TwitterAuth } from '@/core/auth';
-import { getTweetTimeline, ListTimeline, parseArticle, parseListTimelineTweets, parseThreadedConversation, parseTimelineEntryItemContentRaw, parseTimelineTweetsV2, QueryTweetsResponse, ThreadedConversation, TimelineArticle, TimelineEntryItemContentRaw, TimelineV2 } from '@/timeline';
+import {
+  getTweetTimeline,
+  ListTimeline,
+  parseArticle,
+  parseListTimelineTweets,
+  parseThreadedConversation,
+  parseTimelineEntryItemContentRaw,
+  parseTimelineTweetsV2,
+  QueryTweetsResponse,
+  ThreadedConversation,
+  TimelineArticle,
+  TimelineEntryItemContentRaw,
+  TimelineV2,
+} from '@/timeline';
 import {
   ApiV2Includes,
   MediaObjectV2,
@@ -17,8 +30,6 @@ import {
   UserV2,
 } from 'twitter-api-v2';
 import { getUserIdByScreenName } from '../profiles';
-
-
 
 export const defaultOptions = {
   expansions: [
@@ -467,7 +478,7 @@ export async function createCreateTweetRequest(
   };
 
   if (hideLinkPreview) {
-    variables["card_uri"] = "tombstone://card"
+    variables['card_uri'] = 'tombstone://card';
   }
 
   if (mediaData && mediaData.length > 0) {

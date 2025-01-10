@@ -1,6 +1,14 @@
 import { addApiFeatures, requestApi } from '@/core/api';
 import { TwitterAuth } from '@/core/auth';
-import { getTweetTimeline, getUserTimeline, parseSearchTimelineTweets, parseSearchTimelineUsers, QueryProfilesResponse, QueryTweetsResponse, SearchTimeline } from '@/timeline';
+import {
+  getTweetTimeline,
+  getUserTimeline,
+  parseSearchTimelineTweets,
+  parseSearchTimelineUsers,
+  QueryProfilesResponse,
+  QueryTweetsResponse,
+  SearchTimeline,
+} from '@/timeline';
 import stringify from 'json-stable-stringify';
 import { Profile } from '../profiles';
 import { Tweet } from '../tweets';

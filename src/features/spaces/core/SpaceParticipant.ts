@@ -4,7 +4,7 @@ import { EventEmitter } from 'events';
 import { Logger } from '../logger';
 import { ChatClient } from './ChatClient';
 import { JanusClient } from './JanusClient';
-import { Scraper } from '../../scraper';
+import type { Scraper } from '@/scraper';
 import type {
   TurnServersInfo,
   Plugin,

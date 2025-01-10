@@ -6,7 +6,7 @@ import type {
   BroadcastCreated,
   Plugin,
   PluginRegistration,
-  SpeakerInfo
+  SpeakerInfo,
 } from '../types';
 import {
   authorizeToken,

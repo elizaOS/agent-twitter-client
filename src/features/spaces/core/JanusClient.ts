@@ -209,10 +209,7 @@ export class JanusClient extends EventEmitter {
    * Subscribes to a speaker's audio feed by userId and/or feedId.
    * If feedId=0, we wait for a "publishers" event to discover feedId.
    */
-  public async subscribeSpeaker(
-    userId: string,
-    feedId: number = 0,
-  ): Promise<void> {
+  public async subscribeSpeaker(userId: string, feedId = 0): Promise<void> {
     this.logger.debug('[JanusClient] subscribeSpeaker => userId=', userId);
 
     // 1) Attach a separate plugin handle for subscriber
@@ -567,7 +564,7 @@ export class JanusClient extends EventEmitter {
    * Creates an SDP offer and sends "configure" to Janus with it.
    * Used by both host and guest after attach + join.
    */
-  private async configurePublisher(sessionUUID: string = ''): Promise<void> {
+  private async configurePublisher(sessionUUID = ''): Promise<void> {
     if (!this.pc || !this.sessionId || !this.handleId) {
       return;
     }

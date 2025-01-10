@@ -1,4 +1,4 @@
-import { getScraper } from "../../core/utils/test-utils";
+import { getScraper } from '../../core/utils/test-utils';
 
 let shouldSkipV2Tests = false;
 let testUserId: string;
