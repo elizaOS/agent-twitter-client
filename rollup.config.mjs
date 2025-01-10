@@ -3,7 +3,7 @@ import esbuild from 'rollup-plugin-esbuild';
 
 export default [
   {
-    input: 'src/_module.ts',
+    input: 'src/index.ts',
     plugins: [
       esbuild({
         define: {
@@ -26,7 +26,7 @@ export default [
     ],
   },
   {
-    input: 'src/_module.ts',
+    input: 'src/index.ts',
     plugins: [
       esbuild({
         define: {
@@ -51,7 +51,7 @@ export default [
     ],
   },
   {
-    input: 'src/_module.ts',
+    input: 'src/index.ts',
     plugins: [dts()],
     output: {
       file: 'dist/types/index.d.ts',
