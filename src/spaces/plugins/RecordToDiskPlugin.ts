@@ -73,7 +73,7 @@ export class RecordToDiskPlugin implements Plugin {
     const buf = Buffer.from(data.samples.buffer);
     this.outStream.write(buf);
     this.logger?.debug(
-        `[RecordToDiskPlugin] Wrote ${buf.byteLength} bytes from userId=${data.userId} to disk`,
+      `[RecordToDiskPlugin] Wrote ${buf.byteLength} bytes from userId=${data.userId} to disk`,
     );
   }
 
