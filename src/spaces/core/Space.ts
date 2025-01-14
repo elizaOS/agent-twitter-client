@@ -171,7 +171,10 @@ export class Space extends EventEmitter {
       this.setupChatEvents();
     }
 
-    this.logger.info('[Space] Initialized =>', broadcast.share_url);
+    this.logger.info(
+      '[Space] Initialized =>',
+      broadcast.share_url.replace('broadcasts', 'spaces'),
+    );
     this.isInitialized = true;
 
     // Call plugin.init(...) and onJanusReady(...) for all plugins now that we're set
