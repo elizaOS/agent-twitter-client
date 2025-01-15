@@ -193,6 +193,9 @@ const listTweets = await scraper.fetchListTweets('1234567890', 50);
 // Get a user's tweets
 const tweets = scraper.getTweets('TwitterDev');
 
+// Fetch the home timeline
+const homeTimeline = await scraper.fetchHomeTimeline(10, ['seenTweetId1','seenTweetId2']);
+
 // Get a user's liked tweets
 const likedTweets = scraper.getLikedTweets('TwitterDev');
 
