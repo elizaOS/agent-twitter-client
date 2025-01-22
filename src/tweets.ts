@@ -170,6 +170,7 @@ export interface Tweet {
   isReply?: boolean;
   isRetweet?: boolean;
   isSelfThread?: boolean;
+  language?: string;
   likes?: number;
   name?: string;
   mentions: Mention[];
@@ -178,6 +179,7 @@ export interface Tweet {
   place?: PlaceRaw;
   quotedStatus?: Tweet;
   quotedStatusId?: string;
+  quotes?: number;
   replies?: number;
   retweets?: number;
   retweetedStatus?: Tweet;
