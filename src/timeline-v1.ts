@@ -405,7 +405,7 @@ function parseTimelineTweet(
 /**
  * A paginated tweets API response. The `next` field can be used to fetch the next page of results,
  * and the `previous` can be used to fetch the previous results (or results created after the
- * inital request)
+ * initial request)
  */
 export interface QueryTweetsResponse {
   tweets: Tweet[];
