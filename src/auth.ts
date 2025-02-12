@@ -4,6 +4,7 @@ import { Headers } from 'headers-polyfill';
 import { FetchTransformOptions } from './api';
 import { TwitterApi } from 'twitter-api-v2';
 import { Profile } from './profile';
+import { ProfileImageOptions, ProfileUpdateOptions } from './auth-user';
 
 export interface TwitterAuthOptions {
   fetch: typeof fetch;
@@ -86,6 +87,16 @@ export interface TwitterAuth {
    * @param headers A Headers instance representing a request's headers.
    */
   installTo(headers: Headers, url: string): Promise<void>;
+
+  /**
+   * Updates the user's profile.
+   */
+  updateProfile(options: ProfileUpdateOptions): Promise<Profile | undefined>;
+
+  /**
+   * Uploads an image to the user's profile.
+   */
+  uploadImage(options: ProfileImageOptions): Promise<Profile | undefined>;
 }
 
 /**
@@ -287,5 +298,13 @@ export class TwitterGuestAuth implements TwitterAuth {
         this.guestCreatedAt <
           new Date(new Date().valueOf() - 3 * 60 * 60 * 1000))
     );
+  }
+
+  async updateProfile(_: ProfileUpdateOptions): Promise<Profile | undefined> {
+    return undefined;
+  }
+
+  async uploadImage(_: ProfileImageOptions): Promise<Profile | undefined> {
+    return undefined;
   }
 }

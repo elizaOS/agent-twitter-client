@@ -8,6 +8,7 @@ import { Type, type Static } from '@sinclair/typebox';
 import { Check } from '@sinclair/typebox/value';
 import * as OTPAuth from 'otpauth';
 import { LegacyUserRaw, parseProfile, type Profile } from './profile';
+import { Platform } from './platform';
 
 interface TwitterUserAuthFlowInitRequest {
   flow_name: string;
@@ -49,6 +50,21 @@ type FlowTokenResultSuccess = {
 };
 
 type FlowTokenResult = FlowTokenResultSuccess | { status: 'error'; err: Error };
+
+export interface ProfileUpdateOptions {
+  name?: string;
+  url?: string;
+  location?: string;
+  description?: string;
+  include_entities?: boolean;
+  skip_status?: boolean;
+}
+
+export interface ProfileImageOptions {
+  imageFile: File;
+  include_entities?: boolean;
+  skip_status?: boolean;
+}
 
 /**
  * A user authentication token manager.
@@ -410,5 +426,56 @@ export class TwitterUserAuth extends TwitterGuestAuth {
       subtask,
       flowToken: flow.flow_token,
     };
+  }
+
+  async updateProfile(options: ProfileUpdateOptions): Promise<Profile> {
+    const params = new URLSearchParams();
+    Object.entries(options).forEach(([key, value]) => {
+      if (value !== undefined) {
+        params.set(key, value);
+      }
+    });
+    const res = await requestApi<LegacyUserRaw>(
+      `https://api.twitter.com/1.1/account/update_profile.json?${params.toString()}`,
+      this,
+      'POST',
+    );
+
+    if (!res.success) {
+      throw new Error('Failed to update profile');
+    }
+
+    // Update the cached profile
+    this.userProfile = parseProfile(
+      res.value,
+      (res.value as unknown as { verified: boolean }).verified,
+    );
+
+    return this.userProfile;
+  }
+
+  async uploadImage(options: ProfileImageOptions): Promise<Profile> {
+    const multipartFormData = new FormData();
+    multipartFormData.append('image', options.imageFile);
+
+    const res = await requestApi<LegacyUserRaw>(
+      `https://api.x.com/1.1/account/update_profile_image.json`,
+      this,
+      'POST',
+      new Platform(),
+      multipartFormData,
+    );
+
+    if (!res.success) {
+      throw new Error('Failed to update profile image');
+    }
+
+    // Update the cached profile
+    this.userProfile = parseProfile(
+      res.value,
+      (res.value as unknown as { verified: boolean }).verified,
+    );
+
+    return this.userProfile;
   }
 }

@@ -1,10 +1,54 @@
 // src/core/JanusAudio.ts
 
 import { EventEmitter } from 'events';
-import wrtc from '@roamhq/wrtc';
-const { nonstandard } = wrtc;
-const { RTCAudioSource, RTCAudioSink } = nonstandard;
-import { Logger } from '../logger';
+
+// Add Logger interface
+interface Logger {
+  debug: (message: string) => void;
+  isDebugEnabled: () => boolean;
+}
+
+// Remove unused destructuring
+let wrtc;
+let RTCAudioSource: any;
+let RTCAudioSink: any;
+let wrtcAvailable = false;
+
+try {
+  wrtc = require('@roamhq/wrtc');
+  const { nonstandard } = wrtc;
+  RTCAudioSource = nonstandard.RTCAudioSource;
+  RTCAudioSink = nonstandard.RTCAudioSink;
+  wrtcAvailable = true;
+} catch (e) {
+  // Fallback to global WebRTC if available
+  wrtc = {
+    RTCPeerConnection: globalThis.RTCPeerConnection,
+    MediaStream: globalThis.MediaStream,
+  };
+  // Create dummy classes that throw errors when used
+  class UnavailableAudioSource {
+    constructor() {
+      throw new Error(
+        '@roamhq/wrtc package is required for audio source functionality',
+      );
+    }
+  }
+  class UnavailableAudioSink {
+    constructor() {
+      throw new Error(
+        '@roamhq/wrtc package is required for audio sink functionality',
+      );
+    }
+  }
+  RTCAudioSource = UnavailableAudioSource;
+  RTCAudioSink = UnavailableAudioSink;
+}
+
+const {
+  RTCAudioSource: GlobalRTCAudioSource,
+  RTCAudioSink: GlobalRTCAudioSink,
+} = wrtc;
 
 /**
  * Configuration options for the JanusAudioSource.
@@ -37,6 +81,11 @@ export class JanusAudioSource extends EventEmitter {
 
   constructor(options?: AudioSourceOptions) {
     super();
+    if (!wrtcAvailable) {
+      throw new Error(
+        '@roamhq/wrtc package is required for audio source functionality',
+      );
+    }
     this.logger = options?.logger;
     this.source = new RTCAudioSource();
     this.track = this.source.createTrack();
@@ -88,6 +137,11 @@ export class JanusAudioSink extends EventEmitter {
 
   constructor(track: MediaStreamTrack, options?: AudioSinkOptions) {
     super();
+    if (!wrtcAvailable) {
+      throw new Error(
+        '@roamhq/wrtc package is required for audio sink functionality',
+      );
+    }
     this.logger = options?.logger;
 
     if (track.kind !== 'audio') {
