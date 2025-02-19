@@ -1342,6 +1342,56 @@ export async function likeTweet(
 }
 
 /**
+ * Bookmarkes a tweet with the given tweet ID.
+ * @param tweetId The ID of the tweet to bookmark.
+ * @param auth The authentication object.
+ * @returns A promise that resolves when the tweet is bookmarked.
+ */
+export async function bookmarkTweet(
+  tweetId: string,
+  auth: TwitterAuth,
+): Promise<void> {
+  // Prepare the GraphQL endpoint and payload
+  const bookmarkTweetUrl =
+    'https://twitter.com/i/api/graphql/aoDbu3RHznuiSkQ9aNM67Q/CreateBookmark';
+
+  // Retrieve necessary cookies and tokens
+  const cookies = await auth.cookieJar().getCookies(bookmarkTweetUrl);
+  const xCsrfToken = cookies.find((cookie) => cookie.key === 'ct0');
+
+  const headers = new Headers({
+    authorization: `Bearer ${(auth as any).bearerToken}`,
+    cookie: await auth.cookieJar().getCookieString(bookmarkTweetUrl),
+    'content-type': 'application/json',
+    'x-guest-token': (auth as any).guestToken,
+    'x-twitter-auth-type': 'OAuth2Client',
+    'x-twitter-active-user': 'yes',
+    'x-csrf-token': xCsrfToken?.value as string,
+  });
+
+  const payload = {
+    variables: {
+      tweet_id: tweetId,
+    },
+  };
+
+  // Send the POST request to bookmark the tweet
+  const response = await fetch(bookmarkTweetUrl, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(payload),
+  });
+
+  // Update the cookie jar with any new cookies from the response
+  await updateCookieJar(auth.cookieJar(), response.headers);
+
+  // Check for errors in the response
+  if (!response.ok) {
+    throw new Error(await response.text());
+  }
+}
+
+/**
  * Retweets a tweet with the given tweet ID.
  * @param tweetId The ID of the tweet to retweet.
  * @param auth The authentication object.
