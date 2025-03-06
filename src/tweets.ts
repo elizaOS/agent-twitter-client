@@ -1050,7 +1050,9 @@ async function uploadMedia(
   } else {
     // Handle image upload
     const form = new FormData();
-    form.append('media', new Blob([mediaData]));
+    form.append('media', new Blob([mediaData], {
+      type: mediaType,
+    }));
 
     const response = await fetch(uploadUrl, {
       method: 'POST',
