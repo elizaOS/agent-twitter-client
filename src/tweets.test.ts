@@ -575,6 +575,14 @@ test('scraper can like a tweet', async () => {
   await expect(scraper.likeTweet(tweetId)).resolves.not.toThrow();
 });
 
+test('scraper can bookmark a tweet', async () => {
+  const scraper = await getScraper();
+  const tweetId = '1776276954435481937'; // Use a real tweet ID for testing
+
+  // Test should not throw an error
+  await expect(scraper.bookmarkTweet(tweetId)).resolves.not.toThrow();
+});
+
 test('scraper can retweet', async () => {
   const scraper = await getScraper();
   const tweetId = '1776276954435481937';
