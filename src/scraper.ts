@@ -6,7 +6,11 @@ import {
   RequestApiResult,
 } from './api';
 import { TwitterAuth, TwitterAuthOptions, TwitterGuestAuth } from './auth';
-import { TwitterUserAuth } from './auth-user';
+import {
+  ProfileImageOptions,
+  ProfileUpdateOptions,
+  TwitterUserAuth,
+} from './auth-user';
 import {
   getProfile,
   getUserIdByScreenName,
@@ -1105,5 +1109,17 @@ export class Scraper {
     }
 
     return allQuotes;
+  }
+
+  public async updateProfile(
+    options: ProfileUpdateOptions,
+  ): Promise<Profile | undefined> {
+    return await this.auth.updateProfile(options);
+  }
+
+  public async uploadImage(
+    options: ProfileImageOptions,
+  ): Promise<Profile | undefined> {
+    return await this.auth.uploadImage(options);
   }
 }

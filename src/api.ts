@@ -57,6 +57,17 @@ export async function requestApi<T>(
   await auth.installTo(headers, url);
   await platform.randomizeCiphers();
 
+  // Prepare request body and set content type header
+  let requestBody: string | FormData | undefined;
+  if (body) {
+    if (body instanceof FormData) {
+      requestBody = body;
+    } else {
+      requestBody = JSON.stringify(body);
+      headers.set('Content-Type', 'application/json');
+    }
+  }
+
   let res: Response;
   do {
     try {
@@ -64,7 +75,7 @@ export async function requestApi<T>(
         method,
         headers,
         credentials: 'include',
-        ...(body && { body: JSON.stringify(body) }),
+        ...(requestBody && { body: requestBody }),
       });
     } catch (err) {
       if (!(err instanceof Error)) {
@@ -108,7 +119,8 @@ export async function requestApi<T>(
   const transferEncoding = res.headers.get('transfer-encoding');
   if (transferEncoding === 'chunked') {
     // Handle streaming response, if a reader is present
-    const reader = typeof res.body?.getReader === 'function' ? res.body.getReader() : null;
+    const reader =
+      typeof res.body?.getReader === 'function' ? res.body.getReader() : null;
     if (!reader) {
       try {
         const text = await res.text();
