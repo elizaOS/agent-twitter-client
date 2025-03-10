@@ -286,14 +286,16 @@ export async function createCreateTweetRequestV2(
   tweetId?: string,
   options?: {
     poll?: PollData;
+    quoted_tweet_id?: string;
   },
 ) {
   const v2client = auth.getV2Client();
   if (v2client == null) {
     throw new Error('V2 client is not initialized');
   }
-  const { poll } = options || {};
+  const { poll, quoted_tweet_id } = options || {};
   let tweetConfig;
+  
   if (poll) {
     tweetConfig = {
       text,
@@ -301,6 +303,12 @@ export async function createCreateTweetRequestV2(
         options: poll?.options.map((option) => option.label) ?? [],
         duration_minutes: poll?.duration_minutes ?? 60,
       },
+    };
+  } else if (quoted_tweet_id) {
+    // Handle quote tweet by including the quoted tweet ID
+    tweetConfig = {
+      text,
+      quote_tweet_id: quoted_tweet_id,
     };
   } else if (tweetId) {
     tweetConfig = {
@@ -314,6 +322,7 @@ export async function createCreateTweetRequestV2(
       text,
     };
   }
+  
   const tweetResponse = await v2client.v2.tweet(tweetConfig);
   let optionsConfig = {};
   if (options?.poll) {

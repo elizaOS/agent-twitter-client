@@ -412,6 +412,21 @@ test('scraper can send a tweet with sendTweetV2', async () => {
   expect(response?.text).toEqual(tweetText);
 });
 
+test('scraper can create quote tweet with Twitter API v2', async () => {
+  if (shouldSkipV2Tests) {
+    return console.warn("Skipping 'quote tweet with v2' test due to missing API keys.");
+  }
+  const scraper = await getScraper({ authMethod: 'api' });
+  const tweetId = '1776276954435481937';
+  const quoteText = `Automated quote tweet test at ${Date.now()}`;
+
+  const response = await scraper.sendTweetV2(quoteText, undefined, { quoted_tweet_id: tweetId });
+  expect(response).not.toBeNull();
+  expect(response?.id).toBeDefined();
+  expect(response?.text).toEqual(quoteText);
+  expect(response?.isQuoted).toBeTruthy();
+});
+
 test('scraper can create a poll with sendTweetV2', async () => {
   if (shouldSkipV2Tests) {
     return console.warn("Skipping 'getTweetV2' test due to missing API keys.");

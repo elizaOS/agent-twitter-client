@@ -541,6 +541,7 @@ export class Scraper {
     replyToTweetId?: string,
     options?: {
       poll?: PollData;
+      quoted_tweet_id?: string;
     },
   ) {
     return await createCreateTweetRequestV2(
