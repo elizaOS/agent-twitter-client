@@ -19,7 +19,6 @@ import {
   fetchSearchTweets,
   SearchMode,
   searchProfiles,
-  searchQuotedTweets,
   searchTweets,
 } from './search';
 import {
@@ -45,11 +44,6 @@ import {
   getTweetsAndRepliesByUserId,
   getTweetsAndReplies,
   createCreateTweetRequest,
-  PollData,
-  createCreateTweetRequestV2,
-  getTweetV2,
-  getTweetsV2,
-  defaultOptions,
   createQuoteTweetRequest,
   likeTweet,
   retweet,
@@ -66,14 +60,6 @@ import {
 } from './timeline-v2';
 import { fetchHomeTimeline } from './timeline-home';
 import { fetchFollowingTimeline } from './timeline-following';
-import {
-  TTweetv2Expansion,
-  TTweetv2MediaField,
-  TTweetv2PlaceField,
-  TTweetv2PollField,
-  TTweetv2TweetField,
-  TTweetv2UserField,
-} from 'twitter-api-v2';
 import {
   DirectMessagesResponse,
   getDirectMessageConversations,
@@ -529,30 +515,6 @@ export class Scraper {
   }
 
   /**
-   * Send a tweet
-   * @param text The text of the tweet
-   * @param tweetId The id of the tweet to reply to
-   * @param options The options for the tweet
-   * @returns
-   */
-
-  async sendTweetV2(
-    text: string,
-    replyToTweetId?: string,
-    options?: {
-      poll?: PollData;
-      quoted_tweet_id?: string;
-    },
-  ) {
-    return await createCreateTweetRequestV2(
-      text,
-      this.auth,
-      replyToTweetId,
-      options,
-    );
-  }
-
-  /**
    * Fetches tweets and replies from a Twitter user.
    * @param user The user whose tweets should be returned.
    * @param maxTweets The maximum number of tweets to return. Defaults to `200`.
@@ -652,62 +614,6 @@ export class Scraper {
   }
 
   /**
-   * Fetches a single tweet by ID using the Twitter API v2.
-   * Allows specifying optional expansions and fields for more detailed data.
-   *
-   * @param {string} id - The ID of the tweet to fetch.
-   * @param {Object} [options] - Optional parameters to customize the tweet data.
-   * @param {string[]} [options.expansions] - Array of expansions to include, e.g., 'attachments.poll_ids'.
-   * @param {string[]} [options.tweetFields] - Array of tweet fields to include, e.g., 'created_at', 'public_metrics'.
-   * @param {string[]} [options.pollFields] - Array of poll fields to include, if the tweet has a poll, e.g., 'options', 'end_datetime'.
-   * @param {string[]} [options.mediaFields] - Array of media fields to include, if the tweet includes media, e.g., 'url', 'preview_image_url'.
-   * @param {string[]} [options.userFields] - Array of user fields to include, if user information is requested, e.g., 'username', 'verified'.
-   * @param {string[]} [options.placeFields] - Array of place fields to include, if the tweet includes location data, e.g., 'full_name', 'country'.
-   * @returns {Promise<TweetV2 | null>} - The tweet data, including requested expansions and fields.
-   */
-  async getTweetV2(
-    id: string,
-    options: {
-      expansions?: TTweetv2Expansion[];
-      tweetFields?: TTweetv2TweetField[];
-      pollFields?: TTweetv2PollField[];
-      mediaFields?: TTweetv2MediaField[];
-      userFields?: TTweetv2UserField[];
-      placeFields?: TTweetv2PlaceField[];
-    } = defaultOptions,
-  ): Promise<Tweet | null> {
-    return await getTweetV2(id, this.auth, options);
-  }
-
-  /**
-   * Fetches multiple tweets by IDs using the Twitter API v2.
-   * Allows specifying optional expansions and fields for more detailed data.
-   *
-   * @param {string[]} ids - Array of tweet IDs to fetch.
-   * @param {Object} [options] - Optional parameters to customize the tweet data.
-   * @param {string[]} [options.expansions] - Array of expansions to include, e.g., 'attachments.poll_ids'.
-   * @param {string[]} [options.tweetFields] - Array of tweet fields to include, e.g., 'created_at', 'public_metrics'.
-   * @param {string[]} [options.pollFields] - Array of poll fields to include, if tweets contain polls, e.g., 'options', 'end_datetime'.
-   * @param {string[]} [options.mediaFields] - Array of media fields to include, if tweets contain media, e.g., 'url', 'preview_image_url'.
-   * @param {string[]} [options.userFields] - Array of user fields to include, if user information is requested, e.g., 'username', 'verified'.
-   * @param {string[]} [options.placeFields] - Array of place fields to include, if tweets contain location data, e.g., 'full_name', 'country'.
-   * @returns {Promise<TweetV2[]> } - Array of tweet data, including requested expansions and fields.
-   */
-  async getTweetsV2(
-    ids: string[],
-    options: {
-      expansions?: TTweetv2Expansion[];
-      tweetFields?: TTweetv2TweetField[];
-      pollFields?: TTweetv2PollField[];
-      mediaFields?: TTweetv2MediaField[];
-      userFields?: TTweetv2UserField[];
-      placeFields?: TTweetv2PlaceField[];
-    } = defaultOptions,
-  ): Promise<Tweet[]> {
-    return await getTweetsV2(ids, this.auth, options);
-  }
-
-  /**
    * Returns if the scraper has a guest token. The token may not be valid.
    * @returns `true` if the scraper has a guest token; otherwise `false`.
    */
@@ -746,23 +652,10 @@ export class Scraper {
     password: string,
     email?: string,
     twoFactorSecret?: string,
-    appKey?: string,
-    appSecret?: string,
-    accessToken?: string,
-    accessSecret?: string,
   ): Promise<void> {
     // Swap in a real authorizer for all requests
     const userAuth = new TwitterUserAuth(this.token, this.getAuthOptions());
-    await userAuth.login(
-      username,
-      password,
-      email,
-      twoFactorSecret,
-      appKey,
-      appSecret,
-      accessToken,
-      accessSecret,
-    );
+    await userAuth.login(username, password, email, twoFactorSecret);
     this.auth = userAuth;
     this.authTrends = userAuth;
   }

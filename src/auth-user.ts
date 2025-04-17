@@ -90,10 +90,6 @@ export class TwitterUserAuth extends TwitterGuestAuth {
     password: string,
     email?: string,
     twoFactorSecret?: string,
-    appKey?: string,
-    appSecret?: string,
-    accessToken?: string,
-    accessSecret?: string,
   ): Promise<void> {
     await this.updateGuestToken();
 
@@ -129,9 +125,6 @@ export class TwitterUserAuth extends TwitterGuestAuth {
       } else {
         throw new Error(`Unknown subtask ${next.subtask.subtask_id}`);
       }
-    }
-    if (appKey && appSecret && accessToken && accessSecret) {
-      this.loginWithV2(appKey, appSecret, accessToken, accessSecret);
     }
     if ('err' in next) {
       throw next.err;

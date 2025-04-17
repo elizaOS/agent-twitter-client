@@ -2,7 +2,6 @@ import { Cookie, CookieJar, MemoryCookieStore } from 'tough-cookie';
 import { updateCookieJar } from './requests';
 import { Headers } from 'headers-polyfill';
 import { FetchTransformOptions } from './api';
-import { TwitterApi } from 'twitter-api-v2';
 import { Profile } from './profile';
 
 export interface TwitterAuthOptions {
@@ -17,21 +16,6 @@ export interface TwitterAuth {
    * Returns the current cookie jar.
    */
   cookieJar(): CookieJar;
-
-  /**
-   * Logs into a Twitter account using the v2 API
-   */
-  loginWithV2(
-    appKey: string,
-    appSecret: string,
-    accessToken: string,
-    accessSecret: string,
-  ): void;
-
-  /**
-   * Get v2 API client if it exists
-   */
-  getV2Client(): TwitterApi | null;
 
   /**
    * Returns if a user is logged-in to Twitter through this instance.
@@ -116,7 +100,6 @@ export class TwitterGuestAuth implements TwitterAuth {
   protected jar: CookieJar;
   protected guestToken?: string;
   protected guestCreatedAt?: Date;
-  protected v2Client: TwitterApi | null;
 
   fetch: typeof fetch;
 
@@ -127,30 +110,10 @@ export class TwitterGuestAuth implements TwitterAuth {
     this.fetch = withTransform(options?.fetch ?? fetch, options?.transform);
     this.bearerToken = bearerToken;
     this.jar = new CookieJar();
-    this.v2Client = null;
   }
 
   cookieJar(): CookieJar {
     return this.jar;
-  }
-
-  getV2Client(): TwitterApi | null {
-    return this.v2Client ?? null;
-  }
-
-  loginWithV2(
-    appKey: string,
-    appSecret: string,
-    accessToken: string,
-    accessSecret: string,
-  ): void {
-    const v2Client = new TwitterApi({
-      appKey,
-      appSecret,
-      accessToken,
-      accessSecret,
-    });
-    this.v2Client = v2Client;
   }
 
   isLoggedIn(): Promise<boolean> {
