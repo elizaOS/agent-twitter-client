@@ -18,6 +18,7 @@
   },
   "author": "elizaOS",
   "license": "MIT",
+  "type": "module",
   "scripts": {
     "build": "rimraf dist && rollup -c",
     "prepare": "npm run build",

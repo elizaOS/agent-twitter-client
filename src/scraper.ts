@@ -101,6 +101,12 @@ import {
   GrokChatOptions,
   GrokChatResponse,
 } from './grok';
+import {
+  CreateInsightInputQuery,
+  InsightProviderGetQuery,
+  UsePostCountQuery,
+  PostListQuery,
+} from './radar';
 
 const twUrl = 'https://twitter.com';
 const UserTweetsUrl =
@@ -1106,5 +1112,21 @@ export class Scraper {
     }
 
     return allQuotes;
+  }
+
+  public async CreateInsightInputQuery(query: string): Promise<string> {
+    return await CreateInsightInputQuery(query, this.auth);
+  }
+
+  public async InsightProviderGetQuery(id: string): Promise<string> {
+    return await InsightProviderGetQuery(id, this.auth);
+  }
+
+  public async UsePostCountQuery(id: string): Promise<string> {
+    return await UsePostCountQuery(id, this.auth);
+  }
+
+  public async PostListQuery(query: string): Promise<string> {
+    return await PostListQuery(query, this.auth);
   }
 }
