@@ -895,12 +895,12 @@ export class Scraper {
 
   /**
    * Unfollows a user with the given user ID.
-   * @param userId The user ID of the user to unfollow.
+   * @param userName The username of the user to unfollow.
    * @returns A promise that resolves when the user is unfollowed.
    */
-  public async unfollowUser(userName: string): Promise<void> {
+  public async unfollowUser(userName: string): Promise<Response> {
     // Call the unfollowUser function from relationships.ts
-    await unfollowUser(userName, this.auth);
+    return await unfollowUser(userName, this.auth);
   }
 
   /**
