@@ -759,7 +759,7 @@ export async function deleteTweet(
     dark_request: false,
   };
 
-  // Send the GraphQL request to create a quote tweet
+  // Send the GraphQL request to delete a tweet
   const response = await fetch(
     'https://twitter.com/i/api/graphql/VaenaVgh5q5ih7kvyVjgtg/DeleteTweet',
     {
