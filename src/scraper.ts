@@ -869,8 +869,8 @@ export class Scraper {
    * @returns A promise that resolves when the tweet is deleted.
    */
   public async deleteTweet(tweetId: string): Promise<void> {
-    // Call the likeTweet function from tweets.ts
-    await deleteTweet(tweetId, this.auth)
+    // Call the deleteTweet function from tweets.ts 
+    await deleteTweet(tweetId, this.auth);
   }
 
   /**
