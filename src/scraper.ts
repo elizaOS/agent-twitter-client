@@ -868,9 +868,9 @@ export class Scraper {
    * @param tweetId The ID of the tweet to delete.
    * @returns A promise that resolves when the tweet is deleted.
    */
-  public async deleteTweet(tweetId: string): Promise<void> {
+  public async deleteTweet(tweetId: string): Promise<Response> {
     // Call the deleteTweet function from tweets.ts 
-    await deleteTweet(tweetId, this.auth);
+    return await deleteTweet(tweetId, this.auth);
   }
 
   /**
