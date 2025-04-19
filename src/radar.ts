@@ -2,15 +2,26 @@ import { requestApi } from './api.js';
 import { TwitterAuth } from './auth.js';
 
 // Response shape for CreateInsightInputQuery
+// Adjusted interface to handle both success and failure responses
+export interface CreateInsightInputQuerySuccess {
+  __typename: 'InsightRuleMutationSuccess';
+  result: {
+    rest_id: string;
+    id: string;
+  };
+}
+
+export interface CreateInsightInputQueryFailure {
+  __typename: 'InsightRuleFailure';
+  error_code: string;
+  error_message: string;
+}
+
 export interface CreateInsightInputQueryResponse {
   data: {
-    create_insight_rule_v2: {
-      __typename: 'InsightRuleMutationSuccess';
-      result: {
-        rest_id: string;
-        id: string;
-      };
-    };
+    create_insight_rule_v2:
+      | CreateInsightInputQuerySuccess
+      | CreateInsightInputQueryFailure;
   };
 }
 
@@ -31,20 +42,37 @@ export async function CreateInsightInputQuery(
     {
       queryId: 'AsXpgHWLsyD3H-L-VY679g',
       variables: {
-        tags: null,
-        title: '',
         advanced_query: query,
         notifications_enabled: false,
+        tags: null,
+        title: '',
       },
     },
+    true,
   );
 
   if (!res.success) {
     throw res.err;
   }
 
-  // Return just the result object for convenience
-  return res.value.data.create_insight_rule_v2.result;
+  const rule = res.value?.data?.create_insight_rule_v2;
+  if (!rule) {
+    throw new Error('CreateInsightInputQuery failed: No response from API');
+  }
+
+  if (rule.__typename === 'InsightRuleMutationSuccess') {
+    return rule.result;
+  } else if (rule.__typename === 'InsightRuleFailure') {
+    throw new Error(
+      `CreateInsightInputQuery failed: ${rule.__typename} (${rule.error_code}) - ${rule.error_message}`,
+    );
+  } else {
+    throw new Error(
+      `CreateInsightInputQuery failed: Unknown response type (${
+        (rule as any).__typename
+      })`,
+    );
+  }
 }
 
 // Types for the deeply nested response structure
@@ -93,16 +121,15 @@ export async function InsightProviderGetQuery(
   id: string,
   auth: TwitterAuth,
 ): Promise<InsightRuleById | null> {
+  const variables = encodeURIComponent(JSON.stringify({ id }));
+  const url = `https://x.com/i/api/graphql/budp7YfzYNiuQbMvVRq3Vg/InsightProviderGetQuery?variables=${variables}`;
   const res = await requestApi<InsightProviderGetQueryResponse>(
-    'https://x.com/i/api/graphql/budp7YfzYNiuQbMvVRq3Vg/InsightProviderGetQuery',
+    url,
     auth,
-    'POST',
+    'GET',
     undefined,
-    {
-      variables: {
-        id: id,
-      },
-    },
+    undefined, // no body for GET
+    true,
   );
 
   if (!res.success) {
@@ -158,20 +185,26 @@ export async function UsePostCountQuery(
   id: string,
   auth: TwitterAuth,
 ): Promise<UsePostCountQueryResponse> {
+  const now = Math.floor(Date.now() / 1000);
+  const sevenDaysAgo = now - 7 * 24 * 60 * 60;
+
+  const variables = encodeURIComponent(
+    JSON.stringify({
+      from_time: sevenDaysAgo,
+      to_time: now,
+      granularity: 'Day',
+      id: id,
+      timezone_offset: 0,
+    }),
+  );
+  const url = `https://x.com/i/api/graphql/bcYnBtV-7Mr_vbWIY4utWA/usePostCountQuery?variables=${variables}`;
   const res = await requestApi<UsePostCountQueryResponse>(
-    'https://x.com/i/api/graphql/bcYnBtV-7Mr_vbWIY4utWA/usePostCountQuery',
+    url,
     auth,
-    'POST',
+    'GET',
     undefined,
-    {
-      variables: {
-        from_time: 1744329600,
-        to_time: 1744887599,
-        granularity: 'Day',
-        id: id,
-        timezone_offset: 0,
-      },
-    },
+    undefined, // no body for GET
+    true,
   );
 
   if (!res.success) {
@@ -271,18 +304,126 @@ export async function PostListQuery(
   query: string,
   auth: TwitterAuth,
 ): Promise<PostListQueryResponse> {
+  const variables = encodeURIComponent(
+    JSON.stringify({
+      query: `${query} -is:retweet since:2025-04-11`, // TODO: Deal with dynamic dates
+      cursor: null,
+      product: 'Top',
+    }),
+  );
+  const url = `https://x.com/i/api/graphql/vqoJiOnCYxkIJ79fePvckg/PostListQuery?variables=${variables}`;
   const res = await requestApi<PostListQueryResponse>(
-    'https://x.com/i/api/graphql/vqoJiOnCYxkIJ79fePvckg/PostListQuery',
+    url,
+    auth,
+    'GET',
+    undefined,
+    undefined, // no body for GET
+    true,
+  );
+
+  if (!res.success) {
+    throw res.err;
+  }
+
+  return res.value;
+}
+
+// Interface for the InsightsListContextQuery response structure
+
+export interface InsightsListContextQueryResponse {
+  data: {
+    viewer_v2: {
+      user_results: {
+        result: {
+          __typename: 'User';
+          insight_rules: {
+            items: Array<{
+              rest_id: string;
+              core: {
+                title: string;
+                advanced_query: string;
+                created_at: string;
+                updated_at: string;
+                notifications_enabled: boolean;
+              };
+              preview: {
+                counts: Array<{
+                  start_time: number;
+                  count: number;
+                }>;
+              };
+              id: string;
+            }>;
+          };
+          id: string;
+        };
+        id: string;
+      };
+    };
+  };
+}
+
+export async function InsightsListContextQuery(
+  auth: TwitterAuth,
+): Promise<InsightsListContextQueryResponse> {
+  const variables = encodeURIComponent(
+    JSON.stringify({
+      previewsEnabled: true,
+    }),
+  );
+
+  const url = `https://x.com/i/api/graphql/wDbaSTpre4EH5ED1bDsLTg/InsightsListContextQuery?variables=${variables}`;
+  const res = await requestApi<InsightsListContextQueryResponse>(
+    url,
+    auth,
+    'GET',
+    undefined,
+    undefined, // no body for GET
+    true,
+  );
+
+  if (!res.success) {
+    throw res.err;
+  }
+
+  return res.value;
+}
+
+export interface DeleteInsightButtonMutationResponse {
+  data: {
+    delete_insight_rule_v2: {
+      __typename: 'InsightRuleMutationSuccess';
+      result: {
+        rest_id: string;
+        id: string;
+      };
+    };
+  };
+}
+
+export async function DeleteInsightButtonMutation(
+  id: string,
+  auth: TwitterAuth,
+): Promise<DeleteInsightButtonMutationResponse> {
+  const variables = encodeURIComponent(
+    JSON.stringify({
+      id: id,
+    }),
+  );
+
+  const url = `https://x.com/i/api/graphql/Ylfgu_WxLasiJaOk2KVWew/DeleteInsightButtonMutation`;
+  const res = await requestApi<DeleteInsightButtonMutationResponse>(
+    url,
     auth,
     'POST',
     undefined,
     {
+      queryId: 'Ylfgu_WxLasiJaOk2KVWew',
       variables: {
-        query: `${query} -is:retweet since:2025-04-11`, // TODO: Deal with dynamic dates
-        cursor: null,
-        product: 'Top',
+        id: id,
       },
     },
+    true,
   );
 
   if (!res.success) {

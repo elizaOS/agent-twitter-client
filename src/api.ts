@@ -45,6 +45,7 @@ export type RequestApiResult<T> =
  * @param url - The URL to send the request to.
  * @param auth - The instance of {@link TwitterAuth} that will be used to authorize this request.
  * @param method - The HTTP method used when sending this request.
+ * @param isRadarRequest - Whether the request is to radar functionalities.
  */
 export async function requestApi<T>(
   url: string,
@@ -52,10 +53,26 @@ export async function requestApi<T>(
   method: 'GET' | 'POST' = 'GET',
   platform: PlatformExtensions = new Platform(),
   body?: any,
+  isRadarRequest: boolean = false,
 ): Promise<RequestApiResult<T>> {
   const headers = new Headers();
   await auth.installTo(headers, url);
   await platform.randomizeCiphers();
+
+  // Interactions with radar require these headers
+  if (isRadarRequest) {
+    headers.set('accept', '*/*');
+    headers.set('content-type', 'application/json');
+    headers.set('origin', 'https://x.com');
+    headers.set('referer', 'https://x.com/i/radar/new');
+    headers.set(
+      'user-agent',
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36',
+    );
+    headers.set('x-twitter-active-user', 'yes');
+    headers.set('x-twitter-auth-type', 'OAuth2Session');
+    headers.set('x-twitter-client-language', 'en');
+  }
 
   let res: Response;
   do {
@@ -108,7 +125,8 @@ export async function requestApi<T>(
   const transferEncoding = res.headers.get('transfer-encoding');
   if (transferEncoding === 'chunked') {
     // Handle streaming response, if a reader is present
-    const reader = typeof res.body?.getReader === 'function' ? res.body.getReader() : null;
+    const reader =
+      typeof res.body?.getReader === 'function' ? res.body.getReader() : null;
     if (!reader) {
       try {
         const text = await res.text();

@@ -48,6 +48,19 @@ async function initializeScraper() {
 async function main() {
   await initializeScraper();
 
+  const { rest_id } = await scraper.CreateInsightInputQuery('ai');
+  console.log(rest_id);
+
+  // Unknown as to why this is needed. Does not return anything of need, likely just needed for internal setup.
+  const insightRule = await scraper.InsightProviderGetQuery(rest_id);
+  console.log(insightRule);
+
+  const postCount = await scraper.UsePostCountQuery(rest_id);
+  console.log(postCount);
+
+  const postList = await scraper.PostListQuery('ai');
+  console.log(postList);
+
   // const conversationId = await scraper.createGrokConversation();
 
   // const completion = await scraper.grokChat({

@@ -1114,19 +1114,19 @@ export class Scraper {
     return allQuotes;
   }
 
-  public async CreateInsightInputQuery(query: string): Promise<string> {
+  public async CreateInsightInputQuery(query: string): Promise<any> {
     return await CreateInsightInputQuery(query, this.auth);
   }
 
-  public async InsightProviderGetQuery(id: string): Promise<string> {
+  public async InsightProviderGetQuery(id: string): Promise<any> {
     return await InsightProviderGetQuery(id, this.auth);
   }
 
-  public async UsePostCountQuery(id: string): Promise<string> {
+  public async UsePostCountQuery(id: string): Promise<any> {
     return await UsePostCountQuery(id, this.auth);
   }
 
-  public async PostListQuery(query: string): Promise<string> {
+  public async PostListQuery(query: string): Promise<any> {
     return await PostListQuery(query, this.auth);
   }
 }
