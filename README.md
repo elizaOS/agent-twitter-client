@@ -194,7 +194,10 @@ const listTweets = await scraper.fetchListTweets('1234567890', 50);
 const tweets = scraper.getTweets('TwitterDev');
 
 // Fetch the home timeline
-const homeTimeline = await scraper.fetchHomeTimeline(10, ['seenTweetId1','seenTweetId2']);
+const homeTimeline = await scraper.fetchHomeTimeline(10, [
+  'seenTweetId1',
+  'seenTweetId2',
+]);
 
 // Get a user's liked tweets
 const likedTweets = scraper.getLikedTweets('TwitterDev');
@@ -365,3 +368,217 @@ console.log('Conversation:', response.messages);
 
 - Message history prefilling is currently limited due to unofficial API usage
 - Rate limits are enforced (25 messages/2 hours for non-premium)
+
+## Twitter Radar API Integration
+
+This package now includes support for Twitter's **Radar** analytics functionality, which allows you to programmatically analyze trends, search for advanced queries, and retrieve analytics such as post counts and top tweets over time. The Radar API is undocumented and subject to change, but the following methods have been reverse engineered and are available for use.
+
+**Important Note:** These Radar functions act as direct proxies to the underlying, undocumented Twitter GraphQL API endpoints. This means:
+
+- The responses returned are the raw, often complex, data structures from the API. You should refer to the TypeScript interfaces defined in `src/radar.ts` (like `CreateInsightInputQueryResponse`, `UsePostCountQueryResponse`, `PostListQueryResponse`, etc.) to understand the shape of the data.
+- The API behavior, request parameters, and response structures can change without notice as Twitter updates its internal systems.
+- Errors from the API (e.g., rate limits, invalid queries, authentication issues, or API changes) will be thrown as exceptions. **It is crucial to wrap your calls to these functions in `try...catch` blocks** to handle potential errors gracefully.
+
+### Overview
+
+Radar enables you to:
+
+- **Create and manage "insight rules"**: These are essentially saved advanced search queries.
+- **Fetch post count analytics**: Get daily tweet counts for a specific query over a defined time range.
+- **Retrieve top tweets**: Find the most relevant tweets matching a query from the last 7 days.
+- **List and delete your saved insight rules**: Manage your created rules (Twitter currently seems to limit users to 5 rules).
+
+#### Typical Workflow
+
+1.  **Create an Insight Rule**:
+    Use `scraper.CreateInsightInputQuery(query)` to define and save a search query.
+    This returns an object containing `id` and `rest_id`.
+    **Crucially, you must use the `rest_id` value as the identifier for most subsequent Radar API calls.**
+
+2.  **(Recommended) Initialize the Rule**:
+    Call `scraper.InsightProviderGetQuery(rest_id)` shortly after creation.
+    While this function's direct return value might not seem immediately useful, calling it appears necessary to fully initialize the rule for analytics fetching.
+
+3.  **Fetch Post Counts**:
+    Use `scraper.UsePostCountQuery(rest_id, from, to)` to retrieve daily post counts for the rule's query within a specific date range (using UNIX timestamps in seconds).
+
+4.  **Fetch Top Posts**:
+    Use `scraper.PostListQuery(query)` to get a timeline of top tweets matching a query string from the past 7 days.
+    Note: This function uses the _query string directly_, not the `rest_id` of an insight rule.
+
+5.  **List All Insight Rules**:
+    Use `scraper.InsightsListContextQuery()` to retrieve a list of all insight rules currently saved to your account.
+
+6.  **Delete an Insight Rule**:
+    Use `scraper.DeleteInsightButtonMutation(rest_id)` to remove a previously created insight rule using its `rest_id`.
+
+---
+
+### Example Usage
+
+Here's an example demonstrating the typical workflow for using the Radar API:
+
+```typescript
+import { Scraper } from 'agent-twitter-client';
+import fs from 'fs'; // Assuming you might save/load cookies
+
+async function runRadarExample() {
+  const scraper = new Scraper();
+
+  // --- Authentication ---
+  // Ensure you are logged in. You might load cookies or log in via credentials.
+  // Replace with your actual login logic (credentials or loading saved cookies)
+  try {
+    // Example: Load cookies if they exist
+    const cookies = JSON.parse(fs.readFileSync('cookies.json', 'utf-8'));
+    await scraper.setCookies(cookies);
+    if (!(await scraper.isLoggedIn())) {
+      throw new Error('Failed to log in with cookies.');
+    }
+    console.log('Logged in successfully using saved cookies.');
+  } catch (error) {
+    console.log(
+      'No saved cookies found or login failed, logging in with credentials...',
+    );
+    // Replace with your actual credentials or environment variables
+    await scraper.login(
+      process.env.TWITTER_USERNAME!,
+      process.env.TWITTER_PASSWORD!,
+      process.env.TWITTER_EMAIL, // Optional email
+      // Add other necessary login params like 2FA if needed
+    );
+    console.log('Logged in successfully using credentials.');
+    // Optional: Save cookies for next time
+    // const currentCookies = await scraper.getCookies();
+    // fs.writeFileSync('cookies.json', JSON.stringify(currentCookies));
+  }
+
+  // --- Radar Workflow ---
+  const query = '"artificial intelligence" OR #AI -is:retweet'; // Example advanced query
+  let insightRestId: string | null = null;
+
+  try {
+    // 1. Create an Insight Rule
+    console.log(`Creating insight rule for query: ${query}`);
+    const createResult = await scraper.CreateInsightInputQuery(query);
+    insightRestId = createResult.rest_id; // Use rest_id!
+    console.log(`Insight rule created. Rest ID: ${insightRestId}`);
+
+    // 2. (Recommended) Initialize the Rule
+    console.log(`Initializing rule with ID: ${insightRestId}`);
+    // This call might not return immediately useful data, but is often necessary
+    await scraper.InsightProviderGetQuery(insightRestId);
+    console.log('Rule initialization called.');
+    // Add a small delay if needed, as initialization might take time
+    await new Promise((resolve) => setTimeout(resolve, 2000)); // Wait 2 seconds
+
+    // 3. Fetch Post Counts
+    const sevenDaysAgo = Math.floor(Date.now() / 1000) - 7 * 24 * 60 * 60;
+    const now = Math.floor(Date.now() / 1000);
+    console.log(
+      `Fetching post counts for rule ${insightRestId} from ${new Date(
+        sevenDaysAgo * 1000,
+      ).toISOString()} to ${new Date(now * 1000).toISOString()}`,
+    );
+    const postCounts = await scraper.UsePostCountQuery(
+      insightRestId,
+      sevenDaysAgo,
+      now,
+    );
+    // Process the complex response structure (refer to UsePostCountQueryResponse in radar.ts)
+    const countsData =
+      postCounts?.data?.viewer_v2?.user_results?.result?.insight_rule_by_id
+        ?.matched_post_counts;
+    if (countsData) {
+      console.log(`Total posts found: ${countsData.total}`);
+      console.log('Daily counts:', countsData.counts);
+    } else {
+      console.log('Could not extract post count data from response.');
+      // console.log('Raw Post Count Response:', JSON.stringify(postCounts, null, 2)); // For debugging
+    }
+
+    // 4. Fetch Top Posts (using the query string, not rest_id)
+    console.log(`Fetching top posts for query: ${query}`);
+    const topPosts = await scraper.PostListQuery(query);
+    // Process the complex response structure (refer to PostListQueryResponse in radar.ts)
+    const timelineInstructions =
+      topPosts?.data?.search_by_raw_query?.search_timeline?.timeline
+        ?.instructions;
+    const tweetEntries = timelineInstructions
+      ?.find((inst) => inst.__typename === 'TimelineAddEntries')
+      ?.entries?.filter(
+        (entry) => entry?.content?.__typename === 'TimelineTimelineItem',
+      );
+
+    if (tweetEntries && tweetEntries.length > 0) {
+      console.log(`Found ${tweetEntries.length} top tweets:`);
+      tweetEntries.forEach((entry: any, index: number) => {
+        // Use 'any' or define a stricter type based on the interface
+        const tweetResult = entry?.content?.content?.tweet_results?.result;
+        if (tweetResult?.__typename === 'Tweet') {
+          console.log(
+            `  ${index + 1}. ID: ${
+              tweetResult.rest_id
+            }, Text: ${tweetResult.legacy.full_text.substring(0, 50)}...`,
+          );
+        }
+      });
+    } else {
+      console.log('No top tweets found or could not extract from response.');
+      // console.log('Raw Top Posts Response:', JSON.stringify(topPosts, null, 2)); // For debugging
+    }
+
+    // 5. List All Insight Rules
+    console.log('Listing all current insight rules...');
+    const allRules = await scraper.InsightsListContextQuery();
+    const rulesList =
+      allRules?.data?.viewer_v2?.user_results?.result?.insight_rules?.items;
+    if (rulesList) {
+      console.log(`Found ${rulesList.length} rules:`);
+      rulesList.forEach((rule: any) => {
+        // Use 'any' or define a stricter type
+        console.log(
+          `  - ID: ${rule.rest_id}, Query: ${rule.core.advanced_query}`,
+        );
+      });
+    } else {
+      console.log('Could not list insight rules.');
+    }
+  } catch (error) {
+    console.error('An error occurred during the Radar workflow:', error);
+  } finally {
+    // 6. Delete the Insight Rule (Optional Cleanup)
+    if (insightRestId) {
+      try {
+        console.log(`Attempting to delete insight rule: ${insightRestId}`);
+        await scraper.DeleteInsightButtonMutation(insightRestId);
+        console.log(`Successfully deleted insight rule: ${insightRestId}`);
+      } catch (deleteError) {
+        console.error(
+          `Failed to delete insight rule ${insightRestId}:`,
+          deleteError,
+        );
+      }
+    }
+
+    // Log out if necessary
+    // await scraper.logout();
+    // console.log('Logged out.');
+  }
+}
+
+runRadarExample();
+```
+
+**Explanation:**
+
+1.  **Authentication**: Ensure the scraper is logged in before using Radar functions.
+2.  **Create Rule**: Define your search `query` using Twitter's advanced search syntax. Call `CreateInsightInputQuery` and store the returned `rest_id`.
+3.  **Initialize Rule**: Call `InsightProviderGetQuery` with the `rest_id`. A small delay might be helpful afterwards.
+4.  **Get Post Counts**: Call `UsePostCountQuery` with the `rest_id` and Unix timestamps (in seconds) for the desired `from` and `to` dates. Parse the complex response to get the counts.
+5.  **Get Top Posts**: Call `PostListQuery` with the original `query` string (not the `rest_id`). Parse the response to extract the top tweets from the timeline instructions.
+6.  **List Rules**: Call `InsightsListContextQuery` to see all saved rules associated with your account.
+7.  **Delete Rule**: If you need to remove a rule (e.g., due to the 5-rule limit), call `DeleteInsightButtonMutation` with the `rest_id`.
+8.  **Error Handling**: Wrap calls in `try...catch` blocks as these are undocumented APIs and can fail or change. The `finally` block ensures cleanup (like deleting the created rule) happens even if errors occur.
+
+Remember to consult the TypeScript interfaces in `src/radar.ts` to fully understand the structure of the data returned by these functions, especially for `UsePostCountQuery` and `PostListQuery`, as their responses are deeply nested.

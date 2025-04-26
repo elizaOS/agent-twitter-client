@@ -120,7 +120,7 @@ interface InsightProviderGetQueryResponse {
 export async function InsightProviderGetQuery(
   id: string,
   auth: TwitterAuth,
-): Promise<InsightRuleById | null> {
+): Promise<InsightProviderGetQueryResponse | null> {
   const variables = encodeURIComponent(JSON.stringify({ id }));
   const url = `https://x.com/i/api/graphql/budp7YfzYNiuQbMvVRq3Vg/InsightProviderGetQuery?variables=${variables}`;
   const res = await requestApi<InsightProviderGetQueryResponse>(
@@ -136,10 +136,7 @@ export async function InsightProviderGetQuery(
     throw res.err;
   }
 
-  // Safely extract the insight_rule_by_id object, or return null if not found
-  return (
-    res.value?.data?.viewer_v2?.user_results?.result?.insight_rule_by_id ?? null
-  );
+  return res.value;
 }
 
 interface MatchedPostCount {
@@ -183,15 +180,14 @@ export interface UsePostCountQueryResponse {
 
 export async function UsePostCountQuery(
   id: string,
+  from: number,
+  to: number,
   auth: TwitterAuth,
 ): Promise<UsePostCountQueryResponse> {
-  const now = Math.floor(Date.now() / 1000);
-  const sevenDaysAgo = now - 7 * 24 * 60 * 60;
-
   const variables = encodeURIComponent(
     JSON.stringify({
-      from_time: sevenDaysAgo,
-      to_time: now,
+      from_time: from,
+      to_time: to,
       granularity: 'Day',
       id: id,
       timezone_offset: 0,
@@ -304,9 +300,13 @@ export async function PostListQuery(
   query: string,
   auth: TwitterAuth,
 ): Promise<PostListQueryResponse> {
+  const sevenDaysAgoDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 10); // yyyy-mm-dd
+
   const variables = encodeURIComponent(
     JSON.stringify({
-      query: `${query} -is:retweet since:2025-04-11`, // TODO: Deal with dynamic dates
+      query: `${query} -is:retweet since:${sevenDaysAgoDate}`,
       cursor: null,
       product: 'Top',
     }),
@@ -405,12 +405,6 @@ export async function DeleteInsightButtonMutation(
   id: string,
   auth: TwitterAuth,
 ): Promise<DeleteInsightButtonMutationResponse> {
-  const variables = encodeURIComponent(
-    JSON.stringify({
-      id: id,
-    }),
-  );
-
   const url = `https://x.com/i/api/graphql/Ylfgu_WxLasiJaOk2KVWew/DeleteInsightButtonMutation`;
   const res = await requestApi<DeleteInsightButtonMutationResponse>(
     url,

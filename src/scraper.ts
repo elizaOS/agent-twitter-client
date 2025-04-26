@@ -106,6 +106,8 @@ import {
   InsightProviderGetQuery,
   UsePostCountQuery,
   PostListQuery,
+  InsightsListContextQuery,
+  DeleteInsightButtonMutation,
 } from './radar';
 
 const twUrl = 'https://twitter.com';
@@ -1114,19 +1116,94 @@ export class Scraper {
     return allQuotes;
   }
 
+  /**
+   * Initializes a new insight rule, aka radar query for the given search.
+   * This is the first step in using the radar functionality: it creates a query and returns an ID.
+   * You will need this ID to access radar data with other functions.
+   *
+   * @param query - The search string to start a radar for. This can use advanced search operators, for example:
+   *   - ai startup         // contains both "ai" and "startup"
+   *   - "ai startup"       // contains the exact phrase "ai startup"
+   *   - ai OR startup      // contains either "ai" or "startup" (or both)
+   *   - ai -startup        // contains "ai", but not "startup"
+   *   - ai min_faves:50    // contains "ai" and has at least 50 likes
+   *   - ai url:grok        // contains "ai" and a URL with the word "grok" in it
+   *   - @grok              // mentioning X account "grok"
+   *
+   * @returns An object containing an ID you will use in later radar-related functions.
+   * @throws If the operation fails.
+   */
   public async CreateInsightInputQuery(query: string): Promise<any> {
     return await CreateInsightInputQuery(query, this.auth);
   }
 
+  /**
+   * This function is usually called right after CreateInsightInputQuery as part of the radar workflow.
+   * It doesn't return anything useful for you—the important ID you need is already returned by CreateInsightInputQuery.
+   * You probably still need to call this for things to work, but you don't need to use its result.
+   *
+   * @param id - The insight rule ID (from CreateInsightInputQuery).
+   * @returns The API response (not useful for most users).
+   * @throws If the API call fails.
+   */
   public async InsightProviderGetQuery(id: string): Promise<any> {
     return await InsightProviderGetQuery(id, this.auth);
   }
 
-  public async UsePostCountQuery(id: string): Promise<any> {
-    return await UsePostCountQuery(id, this.auth);
+  /**
+   * Retrieves post count statistics for a given insight rule over a specified time range.
+   * This function wraps the UsePostCountQuery API, which returns the number of posts matching the insight rule per day.
+   *
+   *
+   * @param id - The insight rule ID to fetch post counts for.
+   * @param from - The start time (UNIX timestamp in seconds).
+   * @param to - The end time (UNIX timestamp in seconds).
+   * @returns The post count data, including daily counts and summary information.
+   * @throws If the API call fails.
+   */
+  public async UsePostCountQuery(
+    id: string,
+    from: number,
+    to: number,
+  ): Promise<any> {
+    return await UsePostCountQuery(id, from, to, this.auth);
   }
 
+  /**
+   * Fetches a list of posts (tweets) matching a given query from the last 7 days.
+   * This function wraps the PostListQuery API, which performs a search and returns a timeline of tweets.
+   *
+   *
+   * @param query - The search query string (e.g., username, hashtag, or keywords).
+   * @returns The response containing the timeline of tweets matching the query.
+   * @throws If the API call fails.
+   */
   public async PostListQuery(query: string): Promise<any> {
     return await PostListQuery(query, this.auth);
+  }
+
+  /**
+   * Retrieves the list of all insight rules (saved queries) for the authenticated user.
+   * This function wraps the InsightsListContextQuery API, which returns all insight rules and their metadata.
+   *
+   *
+   * @returns The response containing all insight rules for the user.
+   * @throws If the API call fails.
+   */
+  public async InsightsListContextQuery(): Promise<any> {
+    return await InsightsListContextQuery(this.auth);
+  }
+
+  /**
+   * Deletes an existing insight rule by its ID.
+   * This function wraps the DeleteInsightButtonMutation API, which removes a saved insight rule from the user's account.
+   *
+   *
+   * @param id - The insight rule ID to delete.
+   * @returns The result of the deletion operation.
+   * @throws If the API call fails.
+   */
+  public async DeleteInsightButtonMutation(id: string): Promise<any> {
+    return await DeleteInsightButtonMutation(id, this.auth);
   }
 }
