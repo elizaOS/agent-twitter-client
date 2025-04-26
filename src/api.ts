@@ -53,7 +53,7 @@ export async function requestApi<T>(
   method: 'GET' | 'POST' = 'GET',
   platform: PlatformExtensions = new Platform(),
   body?: any,
-  isRadarRequest: boolean = false,
+  isRadarRequest = false,
 ): Promise<RequestApiResult<T>> {
   const headers = new Headers();
   await auth.installTo(headers, url);

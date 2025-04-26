@@ -1,9 +1,9 @@
-import { requestApi } from './api.js';
-import { TwitterAuth } from './auth.js';
+import { requestApi } from './api';
+import { TwitterAuth } from './auth';
 
 // Response shape for CreateInsightInputQuery
 // Adjusted interface to handle both success and failure responses
-export interface CreateInsightInputQuerySuccess {
+interface CreateInsightInputQuerySuccess {
   __typename: 'InsightRuleMutationSuccess';
   result: {
     rest_id: string;
@@ -11,7 +11,7 @@ export interface CreateInsightInputQuerySuccess {
   };
 }
 
-export interface CreateInsightInputQueryFailure {
+interface CreateInsightInputQueryFailure {
   __typename: 'InsightRuleFailure';
   error_code: string;
   error_message: string;
@@ -30,7 +30,7 @@ export interface CreateInsightInputQueryResponse {
  * @returns The created insight rule's result object ({ rest_id, id }).
  * @internal
  */
-export async function CreateInsightInputQuery(
+export async function createInsightInputQuery(
   query: string,
   auth: TwitterAuth,
 ): Promise<{ rest_id: string; id: string }> {
@@ -105,7 +105,7 @@ interface ViewerV2 {
   user_results: UserResults;
 }
 
-interface InsightProviderGetQueryResponse {
+export interface InsightProviderGetQueryResponse {
   data: {
     viewer_v2: ViewerV2;
   };
@@ -117,7 +117,7 @@ interface InsightProviderGetQueryResponse {
  * @param auth TwitterAuth object.
  * @returns The insight rule object, or null if not found.
  */
-export async function InsightProviderGetQuery(
+export async function insightProviderGetQuery(
   id: string,
   auth: TwitterAuth,
 ): Promise<InsightProviderGetQueryResponse | null> {
@@ -178,7 +178,7 @@ export interface UsePostCountQueryResponse {
   };
 }
 
-export async function UsePostCountQuery(
+export async function usePostCountQuery(
   id: string,
   from: number,
   to: number,
@@ -296,7 +296,7 @@ export interface PostListQueryUser {
   id: string;
 }
 
-export async function PostListQuery(
+export async function postListQuery(
   query: string,
   auth: TwitterAuth,
 ): Promise<PostListQueryResponse> {
@@ -363,7 +363,7 @@ export interface InsightsListContextQueryResponse {
   };
 }
 
-export async function InsightsListContextQuery(
+export async function insightsListContextQuery(
   auth: TwitterAuth,
 ): Promise<InsightsListContextQueryResponse> {
   const variables = encodeURIComponent(
@@ -401,7 +401,7 @@ export interface DeleteInsightButtonMutationResponse {
   };
 }
 
-export async function DeleteInsightButtonMutation(
+export async function deleteInsightButtonMutation(
   id: string,
   auth: TwitterAuth,
 ): Promise<DeleteInsightButtonMutationResponse> {

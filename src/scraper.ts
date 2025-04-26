@@ -102,12 +102,17 @@ import {
   GrokChatResponse,
 } from './grok';
 import {
-  CreateInsightInputQuery,
-  InsightProviderGetQuery,
-  UsePostCountQuery,
-  PostListQuery,
-  InsightsListContextQuery,
-  DeleteInsightButtonMutation,
+  createInsightInputQuery,
+  insightProviderGetQuery,
+  usePostCountQuery,
+  postListQuery,
+  insightsListContextQuery,
+  deleteInsightButtonMutation,
+  InsightProviderGetQueryResponse,
+  UsePostCountQueryResponse,
+  PostListQueryResponse,
+  InsightsListContextQueryResponse,
+  DeleteInsightButtonMutationResponse,
 } from './radar';
 
 const twUrl = 'https://twitter.com';
@@ -1133,8 +1138,10 @@ export class Scraper {
    * @returns An object containing an ID you will use in later radar-related functions.
    * @throws If the operation fails.
    */
-  public async CreateInsightInputQuery(query: string): Promise<any> {
-    return await CreateInsightInputQuery(query, this.auth);
+  public async createInsightInputQuery(
+    query: string,
+  ): Promise<{ rest_id: string; id: string }> {
+    return await createInsightInputQuery(query, this.auth);
   }
 
   /**
@@ -1146,8 +1153,10 @@ export class Scraper {
    * @returns The API response (not useful for most users).
    * @throws If the API call fails.
    */
-  public async InsightProviderGetQuery(id: string): Promise<any> {
-    return await InsightProviderGetQuery(id, this.auth);
+  public async insightProviderGetQuery(
+    id: string,
+  ): Promise<InsightProviderGetQueryResponse | null> {
+    return await insightProviderGetQuery(id, this.auth);
   }
 
   /**
@@ -1161,12 +1170,12 @@ export class Scraper {
    * @returns The post count data, including daily counts and summary information.
    * @throws If the API call fails.
    */
-  public async UsePostCountQuery(
+  public async usePostCountQuery(
     id: string,
     from: number,
     to: number,
-  ): Promise<any> {
-    return await UsePostCountQuery(id, from, to, this.auth);
+  ): Promise<UsePostCountQueryResponse> {
+    return await usePostCountQuery(id, from, to, this.auth);
   }
 
   /**
@@ -1178,8 +1187,8 @@ export class Scraper {
    * @returns The response containing the timeline of tweets matching the query.
    * @throws If the API call fails.
    */
-  public async PostListQuery(query: string): Promise<any> {
-    return await PostListQuery(query, this.auth);
+  public async postListQuery(query: string): Promise<PostListQueryResponse> {
+    return await postListQuery(query, this.auth);
   }
 
   /**
@@ -1190,8 +1199,8 @@ export class Scraper {
    * @returns The response containing all insight rules for the user.
    * @throws If the API call fails.
    */
-  public async InsightsListContextQuery(): Promise<any> {
-    return await InsightsListContextQuery(this.auth);
+  public async insightsListContextQuery(): Promise<InsightsListContextQueryResponse> {
+    return await insightsListContextQuery(this.auth);
   }
 
   /**
@@ -1203,7 +1212,9 @@ export class Scraper {
    * @returns The result of the deletion operation.
    * @throws If the API call fails.
    */
-  public async DeleteInsightButtonMutation(id: string): Promise<any> {
-    return await DeleteInsightButtonMutation(id, this.auth);
+  public async deleteInsightButtonMutation(
+    id: string,
+  ): Promise<DeleteInsightButtonMutationResponse> {
+    return await deleteInsightButtonMutation(id, this.auth);
   }
 }

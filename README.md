@@ -391,26 +391,26 @@ Radar enables you to:
 #### Typical Workflow
 
 1.  **Create an Insight Rule**:
-    Use `scraper.CreateInsightInputQuery(query)` to define and save a search query.
+    Use `scraper.createInsightInputQuery(query)` to define and save a search query.
     This returns an object containing `id` and `rest_id`.
     **Crucially, you must use the `rest_id` value as the identifier for most subsequent Radar API calls.**
 
 2.  **(Recommended) Initialize the Rule**:
-    Call `scraper.InsightProviderGetQuery(rest_id)` shortly after creation.
+    Call `scraper.insightProviderGetQuery(rest_id)` shortly after creation.
     While this function's direct return value might not seem immediately useful, calling it appears necessary to fully initialize the rule for analytics fetching.
 
 3.  **Fetch Post Counts**:
-    Use `scraper.UsePostCountQuery(rest_id, from, to)` to retrieve daily post counts for the rule's query within a specific date range (using UNIX timestamps in seconds).
+    Use `scraper.usePostCountQuery(rest_id, from, to)` to retrieve daily post counts for the rule's query within a specific date range (using UNIX timestamps in seconds).
 
 4.  **Fetch Top Posts**:
-    Use `scraper.PostListQuery(query)` to get a timeline of top tweets matching a query string from the past 7 days.
+    Use `scraper.postListQuery(query)` to get a timeline of top tweets matching a query string from the past 7 days.
     Note: This function uses the _query string directly_, not the `rest_id` of an insight rule.
 
 5.  **List All Insight Rules**:
-    Use `scraper.InsightsListContextQuery()` to retrieve a list of all insight rules currently saved to your account.
+    Use `scraper.insightsListContextQuery()` to retrieve a list of all insight rules currently saved to your account.
 
 6.  **Delete an Insight Rule**:
-    Use `scraper.DeleteInsightButtonMutation(rest_id)` to remove a previously created insight rule using its `rest_id`.
+    Use `scraper.deleteInsightButtonMutation(rest_id)` to remove a previously created insight rule using its `rest_id`.
 
 ---
 
@@ -460,14 +460,14 @@ async function runRadarExample() {
   try {
     // 1. Create an Insight Rule
     console.log(`Creating insight rule for query: ${query}`);
-    const createResult = await scraper.CreateInsightInputQuery(query);
+    const createResult = await scraper.createInsightInputQuery(query);
     insightRestId = createResult.rest_id; // Use rest_id!
     console.log(`Insight rule created. Rest ID: ${insightRestId}`);
 
     // 2. (Recommended) Initialize the Rule
     console.log(`Initializing rule with ID: ${insightRestId}`);
     // This call might not return immediately useful data, but is often necessary
-    await scraper.InsightProviderGetQuery(insightRestId);
+    await scraper.insightProviderGetQuery(insightRestId);
     console.log('Rule initialization called.');
     // Add a small delay if needed, as initialization might take time
     await new Promise((resolve) => setTimeout(resolve, 2000)); // Wait 2 seconds
@@ -480,7 +480,7 @@ async function runRadarExample() {
         sevenDaysAgo * 1000,
       ).toISOString()} to ${new Date(now * 1000).toISOString()}`,
     );
-    const postCounts = await scraper.UsePostCountQuery(
+    const postCounts = await scraper.usePostCountQuery(
       insightRestId,
       sevenDaysAgo,
       now,
@@ -499,7 +499,7 @@ async function runRadarExample() {
 
     // 4. Fetch Top Posts (using the query string, not rest_id)
     console.log(`Fetching top posts for query: ${query}`);
-    const topPosts = await scraper.PostListQuery(query);
+    const topPosts = await scraper.postListQuery(query);
     // Process the complex response structure (refer to PostListQueryResponse in radar.ts)
     const timelineInstructions =
       topPosts?.data?.search_by_raw_query?.search_timeline?.timeline
@@ -530,7 +530,7 @@ async function runRadarExample() {
 
     // 5. List All Insight Rules
     console.log('Listing all current insight rules...');
-    const allRules = await scraper.InsightsListContextQuery();
+    const allRules = await scraper.insightsListContextQuery();
     const rulesList =
       allRules?.data?.viewer_v2?.user_results?.result?.insight_rules?.items;
     if (rulesList) {
@@ -551,7 +551,7 @@ async function runRadarExample() {
     if (insightRestId) {
       try {
         console.log(`Attempting to delete insight rule: ${insightRestId}`);
-        await scraper.DeleteInsightButtonMutation(insightRestId);
+        await scraper.deleteInsightButtonMutation(insightRestId);
         console.log(`Successfully deleted insight rule: ${insightRestId}`);
       } catch (deleteError) {
         console.error(
@@ -573,12 +573,12 @@ runRadarExample();
 **Explanation:**
 
 1.  **Authentication**: Ensure the scraper is logged in before using Radar functions.
-2.  **Create Rule**: Define your search `query` using Twitter's advanced search syntax. Call `CreateInsightInputQuery` and store the returned `rest_id`.
-3.  **Initialize Rule**: Call `InsightProviderGetQuery` with the `rest_id`. A small delay might be helpful afterwards.
-4.  **Get Post Counts**: Call `UsePostCountQuery` with the `rest_id` and Unix timestamps (in seconds) for the desired `from` and `to` dates. Parse the complex response to get the counts.
-5.  **Get Top Posts**: Call `PostListQuery` with the original `query` string (not the `rest_id`). Parse the response to extract the top tweets from the timeline instructions.
-6.  **List Rules**: Call `InsightsListContextQuery` to see all saved rules associated with your account.
-7.  **Delete Rule**: If you need to remove a rule (e.g., due to the 5-rule limit), call `DeleteInsightButtonMutation` with the `rest_id`.
+2.  **Create Rule**: Define your search `query` using Twitter's advanced search syntax. Call `createInsightInputQuery` and store the returned `rest_id`.
+3.  **Initialize Rule**: Call `insightProviderGetQuery` with the `rest_id`. A small delay might be helpful afterwards.
+4.  **Get Post Counts**: Call `usePostCountQuery` with the `rest_id` and Unix timestamps (in seconds) for the desired `from` and `to` dates. Parse the complex response to get the counts.
+5.  **Get Top Posts**: Call `postListQuery` with the original `query` string (not the `rest_id`). Parse the response to extract the top tweets from the timeline instructions.
+6.  **List Rules**: Call `insightsListContextQuery` to see all saved rules associated with your account.
+7.  **Delete Rule**: If you need to remove a rule (e.g., due to the 5-rule limit), call `deleteInsightButtonMutation` with the `rest_id`.
 8.  **Error Handling**: Wrap calls in `try...catch` blocks as these are undocumented APIs and can fail or change. The `finally` block ensures cleanup (like deleting the created rule) happens even if errors occur.
 
-Remember to consult the TypeScript interfaces in `src/radar.ts` to fully understand the structure of the data returned by these functions, especially for `UsePostCountQuery` and `PostListQuery`, as their responses are deeply nested.
+Remember to consult the TypeScript interfaces in `src/radar.ts` to fully understand the structure of the data returned by these functions, especially for `usePostCountQuery` and `postListQuery`, as their responses are deeply nested.
