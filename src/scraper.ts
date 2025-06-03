@@ -58,6 +58,7 @@ import {
   getArticle,
   getAllRetweeters,
   Retweeter,
+  bookmarkTweet,
 } from './tweets';
 import {
   parseTimelineTweetsV2,
@@ -870,6 +871,16 @@ export class Scraper {
   public async likeTweet(tweetId: string): Promise<void> {
     // Call the likeTweet function from tweets.ts
     await likeTweet(tweetId, this.auth);
+  }
+
+  /**
+   * Bookmark a tweet with the given tweet ID.
+   * @param tweetId The ID of the tweet to bookmark.
+   * @returns A promise that resolves when the tweet is bookmarked.
+   */
+  public async bookmarkTweet(tweetId: string): Promise<void> {
+    // Call the bookmarkTweet function from tweets.ts
+    await bookmarkTweet(tweetId, this.auth);
   }
 
   /**
