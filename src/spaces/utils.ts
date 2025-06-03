@@ -134,7 +134,6 @@ export async function createBroadcast(params: {
   languages?: string[];
   cookie: string;
   region: string;
-  record: boolean;
 }): Promise<BroadcastCreated> {
   const headers = new Headers({
     'X-Periscope-User-Agent': 'Twitter/m5',
@@ -155,7 +154,7 @@ export async function createBroadcast(params: {
       description: params.description || '',
       height: 1080,
       is_360: false,
-      is_space_available_for_replay: params.record,
+      is_space_available_for_replay: false,
       is_webrtc: true,
       languages: params.languages ?? [],
       region: params.region,

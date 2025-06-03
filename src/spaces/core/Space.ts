@@ -29,7 +29,6 @@ export interface SpaceConfig {
   description?: string;
   languages?: string[];
   debug?: boolean;
-  record: boolean;
 }
 
 /**
@@ -103,7 +102,6 @@ export class Space extends EventEmitter {
       languages: config.languages,
       cookie,
       region,
-      record: config.record,
     });
     this.broadcastInfo = broadcast;
 
@@ -173,10 +171,7 @@ export class Space extends EventEmitter {
       this.setupChatEvents();
     }
 
-    this.logger.info(
-      '[Space] Initialized =>',
-      broadcast.share_url.replace('broadcasts', 'spaces'),
-    );
+    this.logger.info('[Space] Initialized =>', broadcast.share_url);
     this.isInitialized = true;
 
     // Call plugin.init(...) and onJanusReady(...) for all plugins now that we're set

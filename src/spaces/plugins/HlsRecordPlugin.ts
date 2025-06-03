@@ -68,9 +68,7 @@ export class HlsRecordPlugin implements Plugin {
     // Use the same logger from onAttach
     const broadcastInfo = (this.space as any)?.broadcastInfo;
     if (!broadcastInfo || !broadcastInfo.broadcast?.media_key) {
-      this.logger?.warn(
-        '[HlsRecordPlugin] No media_key found in broadcastInfo',
-      );
+      this.logger?.warn('[HlsRecordPlugin] No media_key found in broadcastInfo');
       return;
     }
     this.mediaKey = broadcastInfo.broadcast.media_key;
@@ -82,7 +80,7 @@ export class HlsRecordPlugin implements Plugin {
     }
 
     this.logger?.info(
-      `[HlsRecordPlugin] init => ready to record. Output path="${this.outputPath}"`,
+        `[HlsRecordPlugin] init => ready to record. Output path="${this.outputPath}"`,
     );
 
     // Listen for occupancy updates
@@ -106,7 +104,7 @@ export class HlsRecordPlugin implements Plugin {
     }
 
     this.logger?.debug(
-      `[HlsRecordPlugin] occupancy=${update.occupancy} => trying to fetch HLS URL...`,
+        `[HlsRecordPlugin] occupancy=${update.occupancy} => trying to fetch HLS URL...`,
     );
 
     const scraper = (this.space as any).scraper;
@@ -119,7 +117,7 @@ export class HlsRecordPlugin implements Plugin {
       const status = await scraper.getAudioSpaceStreamStatus(this.mediaKey);
       if (!status?.source?.location) {
         this.logger?.debug(
-          '[HlsRecordPlugin] occupancy>0 but no HLS URL => wait next update',
+            '[HlsRecordPlugin] occupancy>0 but no HLS URL => wait next update',
         );
         return;
       }
@@ -128,7 +126,7 @@ export class HlsRecordPlugin implements Plugin {
       const isReady = await this.waitForHlsReady(hlsUrl, 1);
       if (!isReady) {
         this.logger?.debug(
-          '[HlsRecordPlugin] HLS URL 404 => waiting next occupancy update...',
+            '[HlsRecordPlugin] HLS URL 404 => waiting next occupancy update...',
         );
         return;
       }
@@ -143,8 +141,8 @@ export class HlsRecordPlugin implements Plugin {
    * maxRetries=1 => only try once here; rely on occupancy re-calls otherwise.
    */
   private async waitForHlsReady(
-    hlsUrl: string,
-    maxRetries: number,
+      hlsUrl: string,
+      maxRetries: number,
   ): Promise<boolean> {
     let attempt = 0;
     while (attempt < maxRetries) {
@@ -152,18 +150,18 @@ export class HlsRecordPlugin implements Plugin {
         const resp = await fetch(hlsUrl, { method: 'HEAD' });
         if (resp.ok) {
           this.logger?.debug(
-            `[HlsRecordPlugin] HLS is ready (attempt #${attempt + 1})`,
+              `[HlsRecordPlugin] HLS is ready (attempt #${attempt + 1})`,
           );
           return true;
         } else {
           this.logger?.debug(
-            `[HlsRecordPlugin] HLS status=${resp.status}, retrying...`,
+              `[HlsRecordPlugin] HLS status=${resp.status}, retrying...`,
           );
         }
       } catch (error) {
         this.logger?.debug(
-          '[HlsRecordPlugin] HLS fetch error =>',
-          (error as Error).message,
+            '[HlsRecordPlugin] HLS fetch error =>',
+            (error as Error).message,
         );
       }
       attempt++;
@@ -184,7 +182,7 @@ export class HlsRecordPlugin implements Plugin {
 
     if (!this.outputPath) {
       this.logger?.warn(
-        '[HlsRecordPlugin] No output path set, using /tmp/space_record.ts',
+          '[HlsRecordPlugin] No output path set, using /tmp/space_record.ts',
       );
       this.outputPath = '/tmp/space_record.ts';
     }
@@ -213,8 +211,8 @@ export class HlsRecordPlugin implements Plugin {
     this.recordingProcess.on('close', (code) => {
       this.isRecording = false;
       this.logger?.info(
-        '[HlsRecordPlugin] Recording process closed => code=',
-        code,
+          '[HlsRecordPlugin] Recording process closed => code=',
+          code,
       );
     });
 
