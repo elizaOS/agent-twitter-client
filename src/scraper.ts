@@ -66,6 +66,7 @@ import {
 } from './timeline-v2';
 import { fetchHomeTimeline } from './timeline-home';
 import { fetchFollowingTimeline } from './timeline-following';
+import { fetchBookmarks } from './timeline-bookmarks';
 import {
   TTweetv2Expansion,
   TTweetv2MediaField,
@@ -1106,5 +1107,18 @@ export class Scraper {
     }
 
     return allQuotes;
+  }
+
+  /**
+   * Fetches bookmarks from Twitter.
+   * @param count The number of bookmarks to fetch (default: 20, max: 200).
+   * @param cursor The search cursor, which can be passed into further requests for more results.
+   * @returns A page of bookmarked tweets, containing a cursor that can be used in further requests.
+   */
+  public async fetchBookmarks(
+    count = 20,
+    cursor?: string,
+  ): Promise<QueryTweetsResponse> {
+    return await fetchBookmarks(this.auth, count, cursor);
   }
 }
