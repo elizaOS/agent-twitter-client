@@ -59,6 +59,9 @@ import {
   getAllRetweeters,
   Retweeter,
   deleteTweet,
+  fetchLikedTweets,
+  getLikedTweets,
+  getLikedTweetsByUserId,
 } from './tweets';
 import {
   parseTimelineTweetsV2,
@@ -67,6 +70,7 @@ import {
 } from './timeline-v2';
 import { fetchHomeTimeline } from './timeline-home';
 import { fetchFollowingTimeline } from './timeline-following';
+import { fetchBookmarks } from './timeline-bookmarks';
 import {
   TTweetv2Expansion,
   TTweetv2MediaField,
@@ -577,6 +581,47 @@ export class Scraper {
     maxTweets = 200,
   ): AsyncGenerator<Tweet, void> {
     return getTweetsAndRepliesByUserId(userId, maxTweets, this.auth);
+  }
+
+  /**
+   * Fetches liked tweets from a Twitter user.
+   * @param userId The user whose liked tweets should be returned.
+   * @param maxTweets The maximum number of tweets to return. Defaults to `200`.
+   * @param cursor The search cursor, which can be passed into further requests for more results.
+   * @returns A page of results, containing a cursor that can be used in further requests.
+   */
+  public fetchLikedTweets(
+    userId: string,
+    maxTweets: number,
+    cursor?: string,
+  ): Promise<QueryTweetsResponse> {
+    return fetchLikedTweets(userId, maxTweets, cursor, this.auth);
+  }
+
+  /**
+   * Fetches liked tweets from a Twitter user.
+   * @param user The user whose liked tweets should be returned.
+   * @param maxTweets The maximum number of tweets to return. Defaults to `200`.
+   * @returns An {@link AsyncGenerator} of liked tweets from the provided user.
+   */
+  public getLikedTweets(
+    user: string,
+    maxTweets = 200,
+  ): AsyncGenerator<Tweet, void> {
+    return getLikedTweets(user, maxTweets, this.auth);
+  }
+
+  /**
+   * Fetches liked tweets from a Twitter user using their ID.
+   * @param userId The user whose liked tweets should be returned.
+   * @param maxTweets The maximum number of tweets to return. Defaults to `200`.
+   * @returns An {@link AsyncGenerator} of liked tweets from the provided user.
+   */
+  public getLikedTweetsByUserId(
+    userId: string,
+    maxTweets = 200,
+  ): AsyncGenerator<Tweet, void> {
+    return getLikedTweetsByUserId(userId, maxTweets, this.auth);
   }
 
   /**
@@ -1117,5 +1162,18 @@ export class Scraper {
     }
 
     return allQuotes;
+  }
+
+  /**
+   * Fetches bookmarks from Twitter.
+   * @param count The number of bookmarks to fetch (default: 20, max: 200).
+   * @param cursor The search cursor, which can be passed into further requests for more results.
+   * @returns A page of bookmarked tweets, containing a cursor that can be used in further requests.
+   */
+  public async fetchBookmarks(
+    count = 20,
+    cursor?: string,
+  ): Promise<QueryTweetsResponse> {
+    return await fetchBookmarks(this.auth, count, cursor);
   }
 }

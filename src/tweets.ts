@@ -295,7 +295,7 @@ export async function createCreateTweetRequestV2(
   }
   const { poll, quoted_tweet_id } = options || {};
   let tweetConfig;
-  
+
   if (poll) {
     tweetConfig = {
       text,
@@ -322,7 +322,7 @@ export async function createCreateTweetRequestV2(
       text,
     };
   }
-  
+
   const tweetResponse = await v2client.v2.tweet(tweetConfig);
   let optionsConfig = {};
   if (options?.poll) {
@@ -466,15 +466,15 @@ export async function createCreateTweetRequest(
   mediaData?: { data: Buffer; mediaType: string }[],
   hideLinkPreview = false,
 ) {
-  const onboardingTaskUrl = 'https://api.twitter.com/1.1/onboarding/task.json';
+  const twitterUrl = 'https://twitter.com';
 
-  const cookies = await auth.cookieJar().getCookies(onboardingTaskUrl);
+  const cookies = await auth.cookieJar().getCookies(twitterUrl);
   const xCsrfToken = cookies.find((cookie) => cookie.key === 'ct0');
 
   //@ ts-expect-error - This is a private API.
   const headers = new Headers({
     authorization: `Bearer ${(auth as any).bearerToken}`,
-    cookie: await auth.cookieJar().getCookieString(onboardingTaskUrl),
+    cookie: await auth.cookieJar().getCookieString(twitterUrl),
     'content-type': 'application/json',
     'User-Agent':
       'Mozilla/5.0 (Linux; Android 11; Nokia G20) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.88 Mobile Safari/537.36',
@@ -496,7 +496,7 @@ export async function createCreateTweetRequest(
   };
 
   if (hideLinkPreview) {
-    variables["card_uri"] = "tombstone://card"
+    variables['card_uri'] = 'tombstone://card';
   }
 
   if (mediaData && mediaData.length > 0) {
@@ -584,14 +584,14 @@ export async function createCreateNoteTweetRequest(
   tweetId?: string,
   mediaData?: { data: Buffer; mediaType: string }[],
 ) {
-  const onboardingTaskUrl = 'https://api.twitter.com/1.1/onboarding/task.json';
+  const twitterUrl = 'https://twitter.com';
 
-  const cookies = await auth.cookieJar().getCookies(onboardingTaskUrl);
+  const cookies = await auth.cookieJar().getCookies(twitterUrl);
   const xCsrfToken = cookies.find((cookie) => cookie.key === 'ct0');
 
   const headers = new Headers({
     authorization: `Bearer ${(auth as any).bearerToken}`,
-    cookie: await auth.cookieJar().getCookieString(onboardingTaskUrl),
+    cookie: await auth.cookieJar().getCookieString(twitterUrl),
     'content-type': 'application/json',
     'User-Agent':
       'Mozilla/5.0 (Linux; Android 11; Nokia G20) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.88 Mobile Safari/537.36',
@@ -874,6 +874,34 @@ export async function fetchLikedTweets(
   return parseTimelineTweetsV2(res.value);
 }
 
+export function getLikedTweets(
+  user: string,
+  maxTweets: number,
+  auth: TwitterAuth,
+): AsyncGenerator<Tweet, void> {
+  return getTweetTimeline(user, maxTweets, async (q, mt, c) => {
+    const userIdRes = await getUserIdByScreenName(q, auth);
+
+    if (!userIdRes.success) {
+      throw userIdRes.err;
+    }
+
+    const { value: userId } = userIdRes;
+
+    return fetchLikedTweets(userId, mt, c, auth);
+  });
+}
+
+export function getLikedTweetsByUserId(
+  userId: string,
+  maxTweets: number,
+  auth: TwitterAuth,
+): AsyncGenerator<Tweet, void> {
+  return getTweetTimeline(userId, maxTweets, (q, mt, c) => {
+    return fetchLikedTweets(q, mt, c, auth);
+  });
+}
+
 export async function getTweetWhere(
   tweets: AsyncIterable<Tweet>,
   query: TweetQuery,
@@ -1112,9 +1140,12 @@ async function uploadMedia(
   } else {
     // Handle image upload
     const form = new FormData();
-    form.append('media', new Blob([mediaData], {
-      type: mediaType,
-    }));
+    form.append(
+      'media',
+      new Blob([mediaData], {
+        type: mediaType,
+      }),
+    );
 
     const response = await fetch(uploadUrl, {
       method: 'POST',
@@ -1247,15 +1278,15 @@ export async function createQuoteTweetRequest(
   auth: TwitterAuth,
   mediaData?: { data: Buffer; mediaType: string }[],
 ) {
-  const onboardingTaskUrl = 'https://api.twitter.com/1.1/onboarding/task.json';
+  const twitterUrl = 'https://twitter.com';
 
   // Retrieve necessary cookies and tokens
-  const cookies = await auth.cookieJar().getCookies(onboardingTaskUrl);
+  const cookies = await auth.cookieJar().getCookies(twitterUrl);
   const xCsrfToken = cookies.find((cookie) => cookie.key === 'ct0');
 
   const headers = new Headers({
     authorization: `Bearer ${(auth as any).bearerToken}`,
-    cookie: await auth.cookieJar().getCookieString(onboardingTaskUrl),
+    cookie: await auth.cookieJar().getCookieString(twitterUrl),
     'content-type': 'application/json',
     'User-Agent':
       'Mozilla/5.0 (Linux; Android 11; Nokia G20) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.88 Mobile Safari/537.36',
@@ -1465,15 +1496,15 @@ export async function createCreateLongTweetRequest(
   // URL for the long tweet endpoint
   const url =
     'https://x.com/i/api/graphql/YNXM2DGuE2Sff6a2JD3Ztw/CreateNoteTweet';
-  const onboardingTaskUrl = 'https://api.twitter.com/1.1/onboarding/task.json';
+  const twitterUrl = 'https://twitter.com';
 
-  const cookies = await auth.cookieJar().getCookies(onboardingTaskUrl);
+  const cookies = await auth.cookieJar().getCookies(twitterUrl);
   const xCsrfToken = cookies.find((cookie) => cookie.key === 'ct0');
 
   //@ ts-expect-error - This is a private API.
   const headers = new Headers({
     authorization: `Bearer ${(auth as any).bearerToken}`,
-    cookie: await auth.cookieJar().getCookieString(onboardingTaskUrl),
+    cookie: await auth.cookieJar().getCookieString(twitterUrl),
     'content-type': 'application/json',
     'User-Agent':
       'Mozilla/5.0 (Linux; Android 11; Nokia G20) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.88 Mobile Safari/537.36',
@@ -1591,17 +1622,17 @@ export async function getArticle(
  * All comments must remain in English.
  */
 export async function fetchRetweetersPage(
-    tweetId: string,
-    auth: TwitterAuth,
-    cursor?: string,
-    count = 40,
+  tweetId: string,
+  auth: TwitterAuth,
+  cursor?: string,
+  count = 40,
 ): Promise<{
   retweeters: Retweeter[];
   bottomCursor?: string;
   topCursor?: string;
 }> {
   const baseUrl =
-      'https://twitter.com/i/api/graphql/VSnHXwLGADxxtetlPnO7xg/Retweeters';
+    'https://twitter.com/i/api/graphql/VSnHXwLGADxxtetlPnO7xg/Retweeters';
 
   // Build query parameters
   const variables = {
@@ -1635,7 +1666,8 @@ export async function fetchRetweetersPage(
     creator_subscriptions_quote_tweet_preview_enabled: false,
     freedom_of_speech_not_reach_fetch_enabled: true,
     standardized_nudges_misinfo: true,
-    tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled: true,
+    tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled:
+      true,
     rweb_video_timestamps_enabled: true,
     longform_notetweets_rich_text_read_enabled: true,
     longform_notetweets_inline_media_enabled: true,
@@ -1676,7 +1708,7 @@ export async function fetchRetweetersPage(
 
   const json = await response.json();
   const instructions =
-      json?.data?.retweeters_timeline?.timeline?.instructions || [];
+    json?.data?.retweeters_timeline?.timeline?.instructions || [];
 
   const retweeters: Retweeter[] = [];
   let bottomCursor: string | undefined;
@@ -1701,16 +1733,16 @@ export async function fetchRetweetersPage(
 
         // Capture the bottom cursor
         if (
-            entry.content?.entryType === 'TimelineTimelineCursor' &&
-            entry.content?.cursorType === 'Bottom'
+          entry.content?.entryType === 'TimelineTimelineCursor' &&
+          entry.content?.cursorType === 'Bottom'
         ) {
           bottomCursor = entry.content.value;
         }
 
         // Capture the top cursor
         if (
-            entry.content?.entryType === 'TimelineTimelineCursor' &&
-            entry.content?.cursorType === 'Top'
+          entry.content?.entryType === 'TimelineTimelineCursor' &&
+          entry.content?.cursorType === 'Top'
         ) {
           topCursor = entry.content.value;
         }
@@ -1728,8 +1760,8 @@ export async function fetchRetweetersPage(
  * @returns A list of all users that retweeted the tweet.
  */
 export async function getAllRetweeters(
-    tweetId: string,
-    auth: TwitterAuth
+  tweetId: string,
+  auth: TwitterAuth,
 ): Promise<Retweeter[]> {
   let allRetweeters: Retweeter[] = [];
   let cursor: string | undefined;
@@ -1737,10 +1769,10 @@ export async function getAllRetweeters(
   while (true) {
     // Destructure bottomCursor / topCursor
     const { retweeters, bottomCursor, topCursor } = await fetchRetweetersPage(
-        tweetId,
-        auth,
-        cursor,
-        40
+      tweetId,
+      auth,
+      cursor,
+      40,
     );
     allRetweeters = allRetweeters.concat(retweeters);
 
