@@ -29,6 +29,16 @@ export interface FetchTransformOptions {
   response: (response: Response) => Response | Promise<Response>;
 }
 
+export interface RetryOptions {
+  /**
+   * Retry behavior for 429 rate limit responses:
+   * - 'never': Never retry, return error immediately
+   * - 'always': Always retry
+   * - number: Maximum number of retry attempts
+   */
+  retryBehavior: 'never' | 'always' | number;
+}
+
 export const bearerToken =
   'AAAAAAAAAAAAAAAAAAAAAFQODgEAAAAAVHTp76lzh3rFzcHbmHVvQxYYpTw%3DckAlMINMjmCwxUcaXbAN4XqJVdgMJaHqNOFgPMK0zN1qLqLQCF';
 
@@ -52,12 +62,29 @@ export async function requestApi<T>(
   method: 'GET' | 'POST' = 'GET',
   platform: PlatformExtensions = new Platform(),
   body?: any,
+  retryOptions: RetryOptions = { retryBehavior: 'never' },
 ): Promise<RequestApiResult<T>> {
   const headers = new Headers();
   await auth.installTo(headers, url);
   await platform.randomizeCiphers();
 
+  let retryCount = 0;
   let res: Response;
+
+  const shouldRetry = (status: number): boolean => {
+    if (status !== 429) return false;
+
+    if (retryOptions.retryBehavior === 'never') return false;
+    if (retryOptions.retryBehavior === 'always') return true;
+
+    // If retryBehavior is a number, check if we've hit the limit
+    if (typeof retryOptions.retryBehavior === 'number') {
+      return retryCount < retryOptions.retryBehavior;
+    }
+
+    return false;
+  };
+
   do {
     try {
       res = await auth.fetch(url, {
@@ -78,24 +105,27 @@ export async function requestApi<T>(
 
     await updateCookieJar(auth.cookieJar(), res.headers);
 
+    const xRateLimitRemaining = res.headers.get('x-rate-limit-remaining');
+    const xRateLimitLimit = res.headers.get('x-rate-limit-limit');
+    console.trace(
+      `X rate limit status: ${xRateLimitRemaining}/${xRateLimitLimit}`,
+    );
     if (res.status === 429) {
-      /*
-      Known headers at this point:
-      - x-rate-limit-limit: Maximum number of requests per time period?
-      - x-rate-limit-reset: UNIX timestamp when the current rate limit will be reset.
-      - x-rate-limit-remaining: Number of requests remaining in current time period?
-      */
-      const xRateLimitRemaining = res.headers.get('x-rate-limit-remaining');
+      if (!shouldRetry(res.status)) {
+        return {
+          success: false,
+          err: new Error('Rate limit exceeded and retry limit reached'),
+        };
+      }
       const xRateLimitReset = res.headers.get('x-rate-limit-reset');
       if (xRateLimitRemaining == '0' && xRateLimitReset) {
         const currentTime = new Date().valueOf() / 1000;
         const timeDeltaMs = 1000 * (parseInt(xRateLimitReset) - currentTime);
-
-        // I have seen this block for 800s (~13 *minutes*)
         await new Promise((resolve) => setTimeout(resolve, timeDeltaMs));
       }
+      retryCount++;
     }
-  } while (res.status === 429);
+  } while (shouldRetry(res.status));
 
   if (!res.ok) {
     return {
