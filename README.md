@@ -175,6 +175,9 @@ const followingResults = await scraper.fetchProfileFollowing('12345', 100);
 
 // Follow a user
 const followUserResults = await scraper.followUser('elonmusk');
+
+// Unfollow a user
+const unfollowUserResults = await scraper.unfollowUser('elonmusk');
 ```
 
 ### Trends

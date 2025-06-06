@@ -228,7 +228,7 @@ export class ChatClient extends EventEmitter {
 
     // 5) Reaction => body.type=2
     if (body?.type === 2) {
-      this.logger.debug('[ChatClient] Emitting guestReaction =>', body);
+      this.logger.info('[ChatClient] Emitting guestReaction =>', body);
       this.emit('guestReaction', {
         displayName: body.displayName,
         emoji: body.body,

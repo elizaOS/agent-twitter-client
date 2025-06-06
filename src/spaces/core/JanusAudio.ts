@@ -1,9 +1,9 @@
 // src/core/JanusAudio.ts
 
 import { EventEmitter } from 'events';
-import wrtc from '@roamhq/wrtc';
-const { nonstandard } = wrtc;
-const { RTCAudioSource, RTCAudioSink } = nonstandard;
+// import wrtc from '@roamhq/wrtc';
+// const { nonstandard } = wrtc;
+// const { RTCAudioSource, RTCAudioSink } = nonstandard;
 import { Logger } from '../logger';
 
 /**
@@ -38,7 +38,7 @@ export class JanusAudioSource extends EventEmitter {
   constructor(options?: AudioSourceOptions) {
     super();
     this.logger = options?.logger;
-    this.source = new RTCAudioSource();
+    // this.source = new RTCAudioSource();
     this.track = this.source.createTrack();
   }
 
@@ -95,7 +95,7 @@ export class JanusAudioSink extends EventEmitter {
     }
 
     // Create RTCAudioSink to listen for PCM frames
-    this.sink = new RTCAudioSink(track);
+    // this.sink = new RTCAudioSink(track);
 
     // Register callback for PCM frames
     this.sink.ondata = (frame: {

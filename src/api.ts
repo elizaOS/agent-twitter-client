@@ -107,24 +107,13 @@ export async function requestApi<T>(
   // Check if response is chunked
   const transferEncoding = res.headers.get('transfer-encoding');
   if (transferEncoding === 'chunked') {
-    // Handle streaming response, if a reader is present
-    const reader = typeof res.body?.getReader === 'function' ? res.body.getReader() : null;
+    // Handle streaming response
+    const reader = res.body?.getReader();
     if (!reader) {
-      try {
-        const text = await res.text();
-        try {
-          const value = JSON.parse(text);
-          return { success: true, value };
-        } catch (e) {
-          // Return if just a normal string
-          return { success: true, value: { text } as any };
-        }
-      } catch (e) {
-        return {
-          success: false,
-          err: new Error('No readable stream available and cant parse'),
-        };
-      }
+      return {
+        success: false,
+        err: new Error('No readable stream available'),
+      };
     }
 
     let chunks: any = '';
