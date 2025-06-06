@@ -392,8 +392,8 @@ export function parseTweetV2ToV1(
       end_datetime: poll.end_datetime
         ? poll.end_datetime
         : defaultTweetData?.poll?.end_datetime
-          ? defaultTweetData?.poll?.end_datetime
-          : undefined,
+        ? defaultTweetData?.poll?.end_datetime
+        : undefined,
       options: poll.options.map((option) => ({
         position: option.position,
         label: option.label,
@@ -496,7 +496,7 @@ export async function createCreateTweetRequest(
   };
 
   if (hideLinkPreview) {
-    variables["card_uri"] = "tombstone://card"
+    variables['card_uri'] = 'tombstone://card';
   }
 
   if (mediaData && mediaData.length > 0) {
@@ -584,7 +584,7 @@ export async function createCreateNoteTweetRequest(
   tweetId?: string,
   mediaData?: { data: Buffer; mediaType: string }[],
 ) {
-  const twitterUrl = "https://twitter.com"
+  const twitterUrl = 'https://twitter.com';
 
   const cookies = await auth.cookieJar().getCookies(twitterUrl);
   const xCsrfToken = cookies.find((cookie) => cookie.key === 'ct0');
@@ -820,6 +820,34 @@ export async function fetchLikedTweets(
   }
 
   return parseTimelineTweetsV2(res.value);
+}
+
+export function getLikedTweets(
+  user: string,
+  maxTweets: number,
+  auth: TwitterAuth,
+): AsyncGenerator<Tweet, void> {
+  return getTweetTimeline(user, maxTweets, async (q, mt, c) => {
+    const userIdRes = await getUserIdByScreenName(q, auth);
+
+    if (!userIdRes.success) {
+      throw userIdRes.err;
+    }
+
+    const { value: userId } = userIdRes;
+
+    return fetchLikedTweets(userId, mt, c, auth);
+  });
+}
+
+export function getLikedTweetsByUserId(
+  userId: string,
+  maxTweets: number,
+  auth: TwitterAuth,
+): AsyncGenerator<Tweet, void> {
+  return getTweetTimeline(userId, maxTweets, (q, mt, c) => {
+    return fetchLikedTweets(q, mt, c, auth);
+  });
 }
 
 export async function getTweetWhere(
@@ -1059,9 +1087,12 @@ async function uploadMedia(
   } else {
     // Handle image upload
     const form = new FormData();
-    form.append('media', new Blob([mediaData], {
-      type: mediaType,
-    }));
+    form.append(
+      'media',
+      new Blob([mediaData], {
+        type: mediaType,
+      }),
+    );
 
     const response = await fetch(uploadUrl, {
       method: 'POST',
@@ -1412,7 +1443,7 @@ export async function createCreateLongTweetRequest(
   // URL for the long tweet endpoint
   const url =
     'https://x.com/i/api/graphql/YNXM2DGuE2Sff6a2JD3Ztw/CreateNoteTweet';
-  const twitterUrl = "https://twitter.com"
+  const twitterUrl = 'https://twitter.com';
 
   const cookies = await auth.cookieJar().getCookies(twitterUrl);
   const xCsrfToken = cookies.find((cookie) => cookie.key === 'ct0');
@@ -1582,7 +1613,8 @@ export async function fetchRetweetersPage(
     creator_subscriptions_quote_tweet_preview_enabled: false,
     freedom_of_speech_not_reach_fetch_enabled: true,
     standardized_nudges_misinfo: true,
-    tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled: true,
+    tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled:
+      true,
     rweb_video_timestamps_enabled: true,
     longform_notetweets_rich_text_read_enabled: true,
     longform_notetweets_inline_media_enabled: true,
@@ -1676,7 +1708,7 @@ export async function fetchRetweetersPage(
  */
 export async function getAllRetweeters(
   tweetId: string,
-  auth: TwitterAuth
+  auth: TwitterAuth,
 ): Promise<Retweeter[]> {
   let allRetweeters: Retweeter[] = [];
   let cursor: string | undefined;
@@ -1687,7 +1719,7 @@ export async function getAllRetweeters(
       tweetId,
       auth,
       cursor,
-      40
+      40,
     );
     allRetweeters = allRetweeters.concat(retweeters);
 
