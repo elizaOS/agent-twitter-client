@@ -58,6 +58,7 @@ import {
   getArticle,
   getAllRetweeters,
   Retweeter,
+  deleteTweet,
   fetchLikedTweets,
   getLikedTweets,
   getLikedTweetsByUserId,
@@ -905,6 +906,16 @@ export class Scraper {
       this.auth,
       options?.mediaData,
     );
+  }
+
+  /**
+   * Delete a tweet with the given ID.
+   * @param tweetId The ID of the tweet to delete.
+   * @returns A promise that resolves when the tweet is deleted.
+   */
+  public async deleteTweet(tweetId: string): Promise<Response> {
+    // Call the deleteTweet function from tweets.ts 
+    return await deleteTweet(tweetId, this.auth);
   }
 
   /**

@@ -368,6 +368,26 @@ test('sendTweet successfully sends a tweet', async () => {
   console.log('Send reply result:', replyResult);
 });
 
+test('scraper can delete tweet', async () => {
+  const scraper = await getScraper();
+
+  const draftText = 'This Tweet will be deleted' + Date.now().toString();
+
+  const response = await scraper.sendTweet(draftText);
+  const result = await response.json();
+
+  expect(result).toBeDefined();
+
+  const tweetId = result?.data?.create_tweet?.tweet_results?.result?.rest_id;
+  expect(tweetId).toBeDefined();
+
+  await scraper.deleteTweet(tweetId as string);
+
+  // Verify the tweet is actually deleted
+  const deletedTweet = await scraper.getTweet(tweetId as string);
+  expect(deletedTweet).toBeNull();
+});
+
 test('scraper can get a tweet with getTweetV2', async () => {
   const scraper = await getScraper({ authMethod: 'api' });
   if (shouldSkipV2Tests) {
